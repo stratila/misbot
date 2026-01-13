@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable
 
 FROM python:3.12-slim
-RUN groupadd -g 1001 app && useradd -m -u 1001 -g 1001 app
+RUN groupadd -g 1004 app && useradd -m -u 1004 -g 1004 app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 USER app
 CMD ["/app/.venv/bin/python", "-m", "misbot.server"]
