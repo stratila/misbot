@@ -33,10 +33,9 @@ if __name__ == "__main__":
         application.run_webhook(
             listen="0.0.0.0",
             port=8443,
+            url_path=URL_PATH,
             secret_token=WEBHOOK_SECRET_TOKEN,
             key=SSL_KEY_FILE_PATH,
-            cert=SSL_CERT_FILE_PATH,
-            url_path=URL_PATH,
             webhook_url=WEBHOOK_URL,
         )
     else:
