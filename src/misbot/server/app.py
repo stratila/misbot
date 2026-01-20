@@ -1,10 +1,9 @@
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 
-
 from misbot.bot.app import get_bot_app
-
 from misbot.config import ADMIN_USER_ID
 
 logger = logging.getLogger(__name__)

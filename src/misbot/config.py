@@ -1,6 +1,6 @@
 import os
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -13,3 +13,8 @@ SSL_CERT_FILE_PATH = os.environ.get("SSL_CERT_FILE_PATH")
 URL_PATH = os.environ.get("URL_PATH")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 ADMIN_USER_ID = os.environ.get("ADMIN_USER_ID")
+SQLITE_DB_FILENAME = os.environ.get("SQLITE_DB_FILENAME")
+
+
+def get_sqlite_connection_string():
+    return f"sqlite+aiosqlite:///{SQLITE_DB_FILENAME}"

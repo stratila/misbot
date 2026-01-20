@@ -1,8 +1,7 @@
 from telegram.ext import Application, ApplicationBuilder
 
+from misbot.bot.handlers import handler_message_echo, handler_start_echo
 from misbot.config import TELEGRAM_BOT_TOKEN
-
-from misbot.bot.handlers import handler_start_echo, handler_message_echo
 
 _bot_app: Application | None = None
 

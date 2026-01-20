@@ -1,9 +1,10 @@
-import logging
 import asyncio
-from misbot.server.app import fastapi_app
-from misbot.bot.app import get_bot_app
-from misbot.server import initialize_unvicorn_fastapi_server
+import logging
 
+from misbot.bot.app import get_bot_app
+from misbot.database.db import engine
+from misbot.server import init_uvicorn_server
+from misbot.server.app import fastapi_app
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -12,7 +13,7 @@ logging.basicConfig(
 
 async def main():
     bot = get_bot_app()
-    server = initialize_unvicorn_fastapi_server(fastapi_app)
+    server = init_uvicorn_server(app=fastapi_app)
 
     async with bot:
         await bot.start()
@@ -26,4 +27,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    finally:
+        asyncio.run(engine.dispose())

@@ -1,6 +1,7 @@
-import uvicorn
-import fastapi
 import logging
+
+import fastapi
+import uvicorn
 
 
 def initialize_unvicorn_fastapi_server(app: fastapi.FastAPI) -> uvicorn.Server:

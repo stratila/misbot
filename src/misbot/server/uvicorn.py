@@ -1,9 +1,10 @@
-import uvicorn
-import fastapi
 import logging
 
+import fastapi
+import uvicorn
 
-def initialize_unvicorn_fastapi_server(app: fastapi.FastAPI) -> uvicorn.Server:
+
+def init_uvicorn_server(app: fastapi.FastAPI) -> uvicorn.Server:
     uvicorn_config = uvicorn.Config(
         app=app,
         host="0.0.0.0",

@@ -8,14 +8,17 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.18.1",
     "fastapi[standard]>=0.128.0",
     "python-dotenv>=1.2.1",
     "python-telegram-bot[webhooks]>=22.5",
+    "sqlalchemy[asyncio]>=2.0.45",
     "uvicorn>=0.40.0",
 ]
 
 [project.scripts]
-server = "misbot:server"
+run-server = "misbot:server"
 
 
 [build-system]
@@ -26,3 +29,7 @@ build-backend = "uv_build"
 dev = [
     "ruff>=0.14.11",
 ]
+
+
+[tool.ruff.lint]
+extend-select = ["I"]

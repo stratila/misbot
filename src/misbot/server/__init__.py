@@ -1,5 +1,5 @@
-from misbot.server.uvicorn import initialize_unvicorn_fastapi_server
+from misbot.server.uvicorn import init_uvicorn_server
 
 __all__ = [
-    "initialize_unvicorn_fastapi_server",
+    "init_uvicorn_server",
 ]
