@@ -1,10 +1,10 @@
 import logging
-import random
 
 from telegram import Update
-from telegram.ext import CommandHandler, ContextTypes, MessageHandler
+from telegram.constants import ChatMemberStatus
+from telegram.ext import ChatMemberHandler, CommandHandler, ContextTypes, MessageHandler
 
-from misbot.config import ADMIN_USER_ID
+from misbot.config import ADMIN_USER_ID, MANAGED_CHAT_IDS
 from misbot.database import exec as db
 
 
@@ -33,24 +33,33 @@ async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update)
-
     if update.message:
-        logging.info(f"Handling a message {update.message}")
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=f"Echoing {update.message.text}"
+            chat_id=update.effective_chat.id,
+            text=f"Echo private chat: {update.message.text}",
         )
+        return
 
     if update.channel_post:
-        logging.info(f"Handling a channel_post {update.channel_post}")
-        phrases = [
-            "What kind of nonsense are you sending to machines",
-            "Stop this right now",
-            "My bytes got mixed up with bits",
-        ]
-        message = f"{random.choice(phrases)}. What is this {update.channel_post.text}?"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Echo channel: {update.channel_post.text}",
+        )
+        return
 
 
+async def callback_ack_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.my_chat_member.new_chat_member.status == ChatMemberStatus.ADMINISTRATOR:
+        # handle telegram.error.Forbidden:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Glad to join a chat {update.my_chat_member.chat.title}!",
+        )
+
+
+handler_ack_chat_member = ChatMemberHandler(
+    callback=callback_ack_chat_member,
+    chat_id=[int(mid) for mid in MANAGED_CHAT_IDS.split(",")],
+)
 handler_message_echo = MessageHandler(filters=None, callback=callback_echo)
 handler_start_echo = CommandHandler("start", callback_start)

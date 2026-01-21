@@ -1,6 +1,10 @@
 from telegram.ext import Application, ApplicationBuilder
 
-from misbot.bot.handlers import handler_message_echo, handler_start_echo
+from misbot.bot.handlers import (
+    handler_ack_chat_member,
+    handler_message_echo,
+    handler_start_echo,
+)
 from misbot.config import TELEGRAM_BOT_TOKEN
 
 _bot_app: Application | None = None
@@ -19,6 +23,7 @@ def get_bot_app() -> Application:
 
         _bot_app.add_handlers(
             (
+                handler_ack_chat_member,
                 handler_start_echo,
                 handler_message_echo,
             ),

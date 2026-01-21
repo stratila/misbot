@@ -13,6 +13,7 @@ SSL_CERT_FILE_PATH = os.environ.get("SSL_CERT_FILE_PATH")
 URL_PATH = os.environ.get("URL_PATH")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 ADMIN_USER_ID = os.environ.get("ADMIN_USER_ID")
+MANAGED_CHAT_IDS = os.environ.get("MANAGED_CHAT_IDS")
 SQLITE_DB_FILENAME = os.environ.get("SQLITE_DB_FILENAME")
 
 
