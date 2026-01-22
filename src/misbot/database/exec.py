@@ -43,12 +43,24 @@ async def update_user(user_id: int, is_admin: bool):
 async def get_channel(channel_id: int) -> dict[Any, Any] | None:
     async with engine.connect() as conn:
         result = await conn.execute(
-            select(users).where(
+            select(channels).where(
                 channels.c.id == channel_id,
             ),
         )
-        user = result.fetchone()
-        return dict(user._mapping) if user else None
+        channel = result.fetchone()
+        return dict(channel._mapping) if channel else None
+
+
+async def get_channels(is_managed: bool, status: str | None = None) -> list[dict]:
+    async with engine.connect() as conn:
+        result = await conn.execute(
+            select(channels).where(
+                channels.c.is_managed == is_managed,
+                channels.c.status == status,
+            ),
+        )
+        result = result.fetchall()
+        return [channel._mapping for channel in result]
 
 
 async def create_channel(channel_id: int, is_managed: bool, status: str | None = None):
