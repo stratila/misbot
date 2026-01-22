@@ -14,4 +14,4 @@ FROM python:3.12-slim
 RUN useradd -m app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 USER app
-CMD ["/app/.venv/bin/python", "-m", "misbot.server"]
+CMD ["/app/.venv/bin/python", "-m", "misbot.app"]

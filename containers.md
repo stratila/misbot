@@ -1,2 +1,9 @@
 podman run -d --name nginx   -p 8443:443 -p 8080:80  --mount  type=bind,src=/home/tgbot/ssl,target=/ssl,ro   -v /home/tgbot/nginx/nginx.conf:/etc/nginx/nginx.conf:ro --network tgbot nginx
 podman run --rm --userns auto --mount type=bind,src=/home/tgbot/ssl,target=/ssl,ro,Z --env-file /home/tgbot/misbot/.env -p 5000:8443 --network tgbot localhost/misbot:application-containerize misbot
+
+
+podman run --rm \
+    --userns auto \
+    --mount type=bind,src=/home/googl/python_projects/misbot/db,target=/app/db \
+    --env-file /home/tgbot/misbot/.env \
+    localhost/misbot:application-containerize misbot

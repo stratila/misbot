@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import contextlib
 
 from telegram import Update
 from telegram.ext import Application
@@ -45,7 +46,8 @@ async def main():
         else:
             await run_polling(bot_app, server)
 
-        await bot_app.stop()
+        with contextlib.suppress(asyncio.CancelledError):
+            await bot_app.stop()
 
 
 if __name__ == "__main__":
