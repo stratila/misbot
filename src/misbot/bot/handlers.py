@@ -49,12 +49,34 @@ async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def callback_ack_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.my_chat_member.new_chat_member.status == ChatMemberStatus.ADMINISTRATOR:
-        # handle telegram.error.Forbidden:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"Glad to join a chat {update.my_chat_member.chat.title}!",
-        )
+    channel_id = update.effective_chat.id
+    status = update.my_chat_member.new_chat_member.status
+
+    channel = await db.get_channel(channel_id)
+    if not channel:
+        # In case of how ChatMemberHandler filers for `chat_id` work, channel always managed.
+        await db.create_channel(channel_id=channel_id, is_managed=True)
+
+    match status:
+        case ChatMemberStatus.ADMINISTRATOR:
+            await db.update_channel(
+                channel_id=channel_id,
+                is_managed=True,
+                status=status,
+            )
+            text = f"Enabled in {update.my_chat_member.chat.title}"
+            await context.bot.send_message(
+                chat_id=channel_id,
+                text=text,
+            )
+        case ChatMemberStatus.LEFT:
+            await db.update_channel(
+                channel_id=update.effective_chat.id,
+                is_managed=True,
+                status=status,
+            )
+        case _:
+            return
 
 
 handler_ack_chat_member = ChatMemberHandler(

@@ -51,11 +51,12 @@ async def get_channel(channel_id: int) -> dict[Any, Any] | None:
         return dict(user._mapping) if user else None
 
 
-async def create_channel(channel_id, is_managed):
+async def create_channel(channel_id: int, is_managed: bool, status: str | None = None):
     async with engine.begin() as conn:
         values = {
             "id": channel_id,
             "is_managed": is_managed,
+            "status": status,
         }
         await conn.execute(
             insert(channels).values(**values),
@@ -63,12 +64,13 @@ async def create_channel(channel_id, is_managed):
         await conn.commit()
 
 
-async def update_channel(user_id: int, is_managed: bool):
+async def update_channel(channel_id: int, is_managed: bool, status: str | None = None):
     async with engine.begin() as conn:
         values = {
             "is_managed": is_managed,
+            "status": status,
         }
         await conn.execute(
-            update(users).where(channels.c.id == user_id).values(**values),
+            update(channels).where(channels.c.id == channel_id).values(values),
         )
         await conn.commit()
