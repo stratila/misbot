@@ -13,5 +13,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.12-slim
 RUN useradd -m app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
+COPY --from=builder --chown=app:app /app/alembic /app/alembic
+COPY --from=builder --chown=app:app /app/alembic.ini /app/alembic.ini
+COPY --chown=app:app entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 USER app
-CMD ["/app/.venv/bin/python", "-m", "misbot.app"]
+ENTRYPOINT ["/app/entrypoint.sh"]
