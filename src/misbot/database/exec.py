@@ -1,9 +1,10 @@
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import insert, select, update
 
 from misbot.database.db import engine
-from misbot.database.models import channels, users
+from misbot.database.models import channels, players, time_spent, users
 
 
 async def get_user(user_id: int) -> dict[Any, Any] | None:
@@ -84,5 +85,37 @@ async def update_channel(channel_id: int, is_managed: bool, status: str | None =
         }
         await conn.execute(
             update(channels).where(channels.c.id == channel_id).values(values),
+        )
+        await conn.commit()
+
+
+async def get_player(player_id: str):
+    async with engine.begin() as conn:
+        result = await conn.execute(select(players).where(players.c.id == player_id))
+        player = result.fetchone()
+        return dict(player._mapping) if player else None
+
+
+async def upsert_player(player_id: str, seen: datetime):
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            update(players)
+            .where(players.c.id == player_id)
+            .values(seen=seen)
+            .returning(players.c.id)
+        )
+        updated = result.fetchone()
+
+        if not updated:
+            await conn.execute(insert(players).values(id=player_id, seen=seen))
+        await conn.commit()
+
+
+async def create_time_spent(player_id: str, target_date: date, duration: int):
+    async with engine.begin() as conn:
+        await conn.execute(
+            insert(time_spent).values(
+                player_id=player_id, date=target_date, duration=duration
+            )
         )
         await conn.commit()
