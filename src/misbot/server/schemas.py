@@ -9,9 +9,9 @@ class Player(BaseModel):
 
 
 class Meta(BaseModel):
-    join_message: str
+    message: str
 
 
-class PlayerJoinPostRequestBody(BaseModel):
+class PlayerPostRequestBody(BaseModel):
     player: Player
     meta: Meta

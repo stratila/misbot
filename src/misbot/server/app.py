@@ -1,16 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from telegram import Update
+from telegram import Bot, Update
 from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
 from misbot.config import WEBHOOK_SECRET_TOKEN
 from misbot.database import exec as db
-from misbot.server.schemas import PlayerJoinPostRequestBody
+from misbot.server.schemas import PlayerPostRequestBody
+from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
 logger = logging.getLogger(__name__)
 
@@ -52,22 +54,68 @@ async def webhook(
 
 @fastapi_app.post("/player/join")
 async def player_join(
-    player_join: PlayerJoinPostRequestBody,
+    player_request_body: PlayerPostRequestBody,
     request: Request,
 ):
-    # TODO: Track time player is joining the server.
+    bot: Bot = request.app.state.bot_app.bot
+    player_nickname = player_request_body.player.name
+    player_uuid = str(player_request_body.player.uuid)
+    player_message = player_request_body.meta.message
+    now = datetime.now(tz=timezone.utc)
 
-    # Construct bot message
+    await db.upsert_player(player_id=player_uuid, seen=now)
+
     text = (
-        f"The player {player_join.player.name} has join the server! "
-        f"Their hello message on joining - {player_join.meta.join_message}"
+        "*Player joined\\!*\n"
+        f"Nickname: _{escape_md_v2(player_nickname)}_\n"
+        f"Time {escape_md_v2('(UTC)')}: _{escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))}_\n"
+        f"Secret message: ||{escape_md_v2(player_message)}||"
     )
 
     channels = await db.get_channels(is_managed=True, status="administrator")
+
     for channel in channels:
         channel_id = channel["id"]
-        await request.app.state.bot_app.bot.send_message(
-            chat_id=channel_id,
-            text=text,
-        )
+
+        await bot.send_message(chat_id=channel_id, text=text, parse_mode="MarkdownV2")
+    return {"status": "ok"}
+
+
+@fastapi_app.post("/player/quit")
+async def player_quit(
+    player_request_body: PlayerPostRequestBody,
+    request: Request,
+):
+    bot: Bot = request.app.state.bot_app.bot
+    player_nickname = player_request_body.player.name
+    player_uuid = str(player_request_body.player.uuid)
+    now = datetime.now(tz=timezone.utc)
+
+    palyer = await db.get_player(player_id=player_uuid)
+    await db.upsert_player(player_id=player_uuid, seen=now)
+
+    last_seen: datetime = palyer.get("seen")
+    last_seen = last_seen.replace(tzinfo=timezone.utc)
+
+    duration: timedelta = now - last_seen
+
+    await db.create_time_spent(player_uuid, now.date(), duration.seconds)
+
+    formatted_spent_time = timedelta_to_hhmmss(duration)
+
+    text = (
+        "*Player quit\\!*\n"
+        f"Nickname: _{escape_md_v2(player_nickname)}_\n"
+        f"Time {escape_md_v2('(UTC)')}: _{escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))}_\n"
+        f"Time spent on server: __{escape_md_v2(formatted_spent_time)}__"
+    )
+
+    print(text)
+
+    channels = await db.get_channels(is_managed=True, status="administrator")
+
+    for channel in channels:
+        channel_id = channel["id"]
+        await bot.send_message(chat_id=channel_id, text=text, parse_mode="MarkdownV2")
+
     return {"status": "ok"}
