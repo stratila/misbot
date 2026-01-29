@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -9,7 +10,7 @@ class Player(BaseModel):
 
 
 class Meta(BaseModel):
-    message: str
+    message: Optional[str]
 
 
 class PlayerPostRequestBody(BaseModel):
