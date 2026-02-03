@@ -11,15 +11,16 @@ from telegram.ext import Application
 from misbot.bot.app import get_bot_app
 from misbot.config import WEBHOOK_SECRET_TOKEN
 from misbot.database import exec as db
-from misbot.server.schemas import PlayerPostRequestBody
-from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 from misbot.server.constans import (
     HEAD,
     NICKNAME,
-    TIME_ACTIONS,
     SECRET_MESSAGE,
+    TIME_ACTIONS,
     TIME_SPENT_ON_SERVER
 )
+from misbot.server.schemas import PlayerPostRequestBody
+from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
+
 
 logger = logging.getLogger(__name__)
 
