@@ -5,8 +5,8 @@ from telegram.constants import ChatMemberStatus
 from telegram.ext import ChatMemberHandler, CommandHandler, ContextTypes, MessageHandler
 
 from misbot.config import ADMIN_USER_ID, MANAGED_CHAT_IDS
+from misbot.constans import FIRST_MSG_TEXT, GREETING_MSG_TEXT
 from misbot.database import exec as db
-
 
 async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = await db.get_user(user_id=update.effective_chat.id)
@@ -21,14 +21,14 @@ async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             is_admin=is_admin,
         )
 
-        text = f"Fist time here! Your role is {'admin' if is_admin else 'user'}"
+        text = FIRST_MSG_TEXT.format(role=("admin" if is_admin else "user"))
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
         return
 
     logging.info(
         f"User for {update.effective_chat.id=} is present in the database, handling."
     )
-    text = f"Weclome to misbot again! Your role is {'admin' if user and user.get('is_admin') else 'user'}"
+    text = GREETING_MSG_TEXT.format(role=("admin" if user and user.get("is_admin") else "user"))
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 

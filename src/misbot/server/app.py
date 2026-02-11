@@ -10,14 +10,8 @@ from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
 from misbot.config import WEBHOOK_SECRET_TOKEN
+from misbot.constans import JOIN_MSG_TEXT, QUIT_MSG_TEXT
 from misbot.database import exec as db
-from misbot.server.constans import (
-    HEAD,
-    NICKNAME,
-    SECRET_MESSAGE,
-    TIME_ACTIONS,
-    TIME_SPENT_ON_SERVER
-)
 from misbot.server.schemas import PlayerPostRequestBody
 from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
@@ -73,14 +67,12 @@ async def player_join(
 
     await db.upsert_player(player_id=player_uuid, seen=now)
 
-    text = (
-        HEAD.format(action="join") +
-        NICKNAME.format(player_nickname=escape_md_v2(player_nickname)) +
-        TIME_ACTIONS.format(
-            UTS=escape_md_v2('(UTC)'),
-            time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))
-        ) +
-        SECRET_MESSAGE.format(message=escape_md_v2(player_message))
+    text = JOIN_MSG_TEXT.format(
+        action="join",
+        player_nickname=escape_md_v2(player_nickname),
+        timezone=escape_md_v2('(UTC)'),
+        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        message=escape_md_v2(player_message),
     )
 
     channels = await db.get_channels(is_managed=True, status="administrator")
@@ -114,17 +106,13 @@ async def player_quit(
 
     formatted_spent_time = timedelta_to_hhmmss(duration)
 
-    text = (
-        HEAD.format(action="quit") +
-        NICKNAME.format(player_nickname=escape_md_v2(player_nickname)) +
-        TIME_ACTIONS.format(
-            UTS=escape_md_v2('(UTC)'),
-            time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))
-        ) +
-        TIME_SPENT_ON_SERVER.format(
-            time_on_server=escape_md_v2(formatted_spent_time)
+    text = QUIT_MSG_TEXT.format(
+        action="quit",
+        player_nickname=escape_md_v2(player_nickname),
+        timezone=escape_md_v2('(UTC)'),
+        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        spent_time=escape_md_v2(formatted_spent_time),
         )
-    )
 
     print(text)
 
