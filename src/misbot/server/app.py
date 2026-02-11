@@ -10,9 +10,11 @@ from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
 from misbot.config import WEBHOOK_SECRET_TOKEN
+from misbot.constans import JOIN_MSG_TEXT, QUIT_MSG_TEXT
 from misbot.database import exec as db
 from misbot.server.schemas import PlayerPostRequestBody
 from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
+
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +67,12 @@ async def player_join(
 
     await db.upsert_player(player_id=player_uuid, seen=now)
 
-    text = (
-        "*Player joined\\!*\n"
-        f"Nickname: _{escape_md_v2(player_nickname)}_\n"
-        f"Time {escape_md_v2('(UTC)')}: _{escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))}_\n"
-        f"Secret message: ||{escape_md_v2(player_message)}||"
+    text = JOIN_MSG_TEXT.format(
+        action="join",
+        player_nickname=escape_md_v2(player_nickname),
+        timezone=escape_md_v2('(UTC)'),
+        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        message=escape_md_v2(player_message),
     )
 
     channels = await db.get_channels(is_managed=True, status="administrator")
@@ -103,12 +106,13 @@ async def player_quit(
 
     formatted_spent_time = timedelta_to_hhmmss(duration)
 
-    text = (
-        "*Player quit\\!*\n"
-        f"Nickname: _{escape_md_v2(player_nickname)}_\n"
-        f"Time {escape_md_v2('(UTC)')}: _{escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S'))}_\n"
-        f"Time spent on server: __{escape_md_v2(formatted_spent_time)}__"
-    )
+    text = QUIT_MSG_TEXT.format(
+        action="quit",
+        player_nickname=escape_md_v2(player_nickname),
+        timezone=escape_md_v2('(UTC)'),
+        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        spent_time=escape_md_v2(formatted_spent_time),
+        )
 
     print(text)
 
