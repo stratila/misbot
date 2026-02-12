@@ -5,6 +5,7 @@ NGINX_NAME := nginx
 APP_NAME := bot-app
 
 SSL_DIR := /home/tgbot/ssl
+NGINX_STATIC_DIR := /home/tgbot/static
 NGINX_CONF := /home/tgbot/misbot/nginx/nginx.conf
 ENV_FILE := /home/tgbot/misbot/.env
 
@@ -25,6 +26,7 @@ up: build
 		--name $(NGINX_NAME) \
 		--pod $(POD_NAME) \
 		--mount type=bind,src=$(SSL_DIR),target=/ssl,ro \
+		--mount type=bind,src=$(NGINX_STATIC_DIR),target=/usr/share/nginx/static,ro \
 		-v $(NGINX_CONF):/etc/nginx/nginx.conf:ro \
 		$(IMAGE_NGINX)
 
