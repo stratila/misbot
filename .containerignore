@@ -1,1 +1,8 @@
 .venv
+.git
+.gitignore
+.vscode
+*.env*
+images
+db
+Makefile

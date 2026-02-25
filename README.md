@@ -107,6 +107,49 @@ docker compose -f container-compose.yml restart app
 This will stop and start the container, applying your code changes immediately.
 
 
+
+## Verify Your Bot Works
+
+1. After starting your project using the `up` command, verify the logs:
+
+```
+docker compose -f container-compose.yml logs -f app
+```
+
+2. Verify that the correct environment variables are set inside the container:
+
+```
+docker compose -f container-compose.yml exec app /bin/bash -c "export"
+```
+
+3. Verify that the bot echoes messages in the user chat.
+
+![Bot responds to the chat](images/bot_response.png)
+
+4. Verify that the bot has message permissions enabled and echoes messages in the channel.
+
+![Bot responds to the channel](images/channel_response.png)
+
+
+## Verify That the Server Works and Is Successfully Integrated with the Bot
+
+1. Open the default FastAPI Swagger page at:
+   `http://localhost:8080/docs`
+
+2. Find the `POST /player/join` endpoint. Click **"Try it out"**, leave the request body unchanged, and then click **"Execute"**.
+
+3. Verify that the bot sends a **"Player join!"** message to the channel.
+
+![Player join](images/player_join.png)
+
+4. Find the `POST /player/quit` endpoint. Click **"Try it out"**, leave the request body unchanged, and then click **"Execute"**.
+
+5. Verify that the bot sends a **"Player quit!"** message to the channel.
+
+![Player quit](images/player_quit.png)
+
+
+
 ## Editing DB Schema and Applying Migrationgs
 
 TBD
