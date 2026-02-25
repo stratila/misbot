@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      target: "dev"
+    env_file:
+      - .dev.env
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        source: sqlite-db
+        target: /app/db
+    ports:
+      - "8080:8080"
+
+volumes:
+  sqlite-db:

@@ -77,6 +77,7 @@ async def player_join(
 
     channels = await db.get_channels(is_managed=True, status="administrator")
 
+    logging.info(f"Channels {channels}")
     for channel in channels:
         channel_id = channel["id"]
 
