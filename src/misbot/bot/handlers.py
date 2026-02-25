@@ -43,7 +43,11 @@ async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    if update.channel_post and update.channel_post.from_user.id == int(ADMIN_USER_ID):
+    if (
+        update.channel_post
+        and update.channel_post.from_user
+        and update.channel_post.from_user.id == int(ADMIN_USER_ID)
+    ):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=f"Echo channel (authorized): {update.channel_post.text}",
