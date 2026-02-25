@@ -15,7 +15,7 @@ VOLUME_DB := misbot-db
 
 build:
 	@echo "Building application image..."
-	podman build -t $(IMAGE_APP) .
+	podman build -t $(IMAGE_APP) --target prod .
 
 up: build
 	@echo "Starting pod $(POD_NAME)..."
