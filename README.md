@@ -57,7 +57,7 @@ SQLITE_DB_FILENAME=/app/db/botdb.sqlite
 
 ## Run Project
 
-You can use Docker or docker to run the project locally.
+You can use Docker or Podman to run the project locally.
 
 ```bash
 # Build the image

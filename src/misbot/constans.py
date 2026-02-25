@@ -1,4 +1,3 @@
-
 FIRST_MSG_TEXT = "First time here! Your role is {role}"
 
 GREETING_MSG_TEXT = "Weclome to misbot again! Your role is {role}"

@@ -15,7 +15,6 @@ from misbot.database import exec as db
 from misbot.server.schemas import PlayerPostRequestBody
 from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -70,8 +69,8 @@ async def player_join(
     text = JOIN_MSG_TEXT.format(
         action="join",
         player_nickname=escape_md_v2(player_nickname),
-        timezone=escape_md_v2('(UTC)'),
-        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        timezone=escape_md_v2("(UTC)"),
+        time=escape_md_v2(now.strftime("%d/%m/%Y %H:%M:%S")),
         message=escape_md_v2(player_message),
     )
 
@@ -110,10 +109,10 @@ async def player_quit(
     text = QUIT_MSG_TEXT.format(
         action="quit",
         player_nickname=escape_md_v2(player_nickname),
-        timezone=escape_md_v2('(UTC)'),
-        time=escape_md_v2(now.strftime('%d/%m/%Y %H:%M:%S')),
+        timezone=escape_md_v2("(UTC)"),
+        time=escape_md_v2(now.strftime("%d/%m/%Y %H:%M:%S")),
         spent_time=escape_md_v2(formatted_spent_time),
-        )
+    )
 
     print(text)
 
