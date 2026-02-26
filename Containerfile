@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --active --no-install-project --no-editable
 
-FROM deps as builder
+FROM deps AS builder
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --active --no-editable
