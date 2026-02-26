@@ -3,6 +3,7 @@ services:
     build:
       context: .
       target: "dev"
+      dockerfile: Containerfile
     env_file:
       - .dev.env
     volumes:
