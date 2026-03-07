@@ -10,10 +10,15 @@ from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
 from misbot.config import WEBHOOK_SECRET_TOKEN
-from misbot.constans import JOIN_MSG_TEXT, QUIT_MSG_TEXT
 from misbot.database import exec as db
+from misbot.database.queries.time_sessions import (
+    create_time_session,
+    get_time_session,
+    update_time_session,
+)
+from misbot.domain.models import TimeSession
+from misbot.server.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPostRequestBody
-from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
 logger = logging.getLogger(__name__)
 
@@ -59,28 +64,82 @@ async def player_join(
     request: Request,
 ):
     bot: Bot = request.app.state.bot_app.bot
-    player_nickname = player_request_body.player.name
-    player_uuid = str(player_request_body.player.uuid)
-    player_message = player_request_body.meta.message
     now = datetime.now(tz=timezone.utc)
-
-    await db.upsert_player(player_id=player_uuid, seen=now)
-
-    text = JOIN_MSG_TEXT.format(
-        action="join",
-        player_nickname=escape_md_v2(player_nickname),
-        timezone=escape_md_v2("(UTC)"),
-        time=escape_md_v2(now.strftime("%d/%m/%Y %H:%M:%S")),
-        message=escape_md_v2(player_message),
-    )
-
     channels = await db.get_channels(is_managed=True, status="administrator")
 
-    logging.info(f"Channels {channels}")
-    for channel in channels:
-        channel_id = channel["id"]
+    # Update player's last seen time or create a new player if it doesn't exist.
+    await db.upsert_player(player_id=player_request_body.player.uuid, seen=now)
 
-        await bot.send_message(chat_id=channel_id, text=text, parse_mode="MarkdownV2")
+    session: TimeSession | None = await get_time_session(
+        player_request_body.meta.session_id
+    )
+
+    # Handle already exists
+    if session and session.joined_at is not None:
+        logger.info(
+            "Session already exists and has joined_at. No need to create a new session."
+        )
+        return {"status": "ok"}
+
+    # Handle incorrect order.
+    if session and session.quit_at is not None:
+        joined_at = now
+        # joined_at later timestamp
+        duration = joined_at - session.quit_at
+        if duration.seconds < 0:
+            logger.info(
+                f"Session has quit_at but {joined_at=} is after {session.quit_at=}. This is an incorrect order."
+                "Setting duration to 0.",
+            )
+            joined_at = session.quit_at
+            duration = timedelta()
+
+        session: TimeSession | None = await update_time_session(
+            session.model_copy(update={"joined_at": joined_at})
+        )
+
+        for channel in channels:
+            await bot.send_message(
+                chat_id=channel["id"],
+                text=get_join_msg(
+                    player_nickname=player_request_body.player.name,
+                    player_message=player_request_body.meta.message,
+                    timestamp=session.joined_at,
+                ),
+                parse_mode="MarkdownV2",
+            )
+
+            await bot.send_message(
+                chat_id=channel["id"],
+                text=get_quit_msg(
+                    player_nickname=player_request_body.player.name,
+                    timestamp=session.quit_at,
+                    duration=duration,
+                ),
+                parse_mode="MarkdownV2",
+            )
+        return {"status": "ok"}
+
+    # Handle normal case.
+    if not session:
+        session = await create_time_session(
+            TimeSession(
+                session_id=player_request_body.meta.session_id,
+                player_id=player_request_body.player.uuid,
+                joined_at=now,
+            )
+        )
+        for channel in channels:
+            await bot.send_message(
+                chat_id=channel["id"],
+                text=get_join_msg(
+                    player_nickname=player_request_body.player.name,
+                    player_message=player_request_body.meta.message,
+                    timestamp=session.joined_at,
+                ),
+                parse_mode="MarkdownV2",
+            )
+
     return {"status": "ok"}
 
 
@@ -90,34 +149,49 @@ async def player_quit(
     request: Request,
 ):
     bot: Bot = request.app.state.bot_app.bot
-    player_nickname = player_request_body.player.name
-    player_uuid = str(player_request_body.player.uuid)
     now = datetime.now(tz=timezone.utc)
-
-    palyer = await db.get_player(player_id=player_uuid)
-    await db.upsert_player(player_id=player_uuid, seen=now)
-
-    last_seen: datetime = palyer.get("seen")
-    last_seen = last_seen.replace(tzinfo=timezone.utc)
-
-    duration: timedelta = now - last_seen
-
-    await db.create_time_spent(player_uuid, now.date(), duration.seconds)
-
-    formatted_spent_time = timedelta_to_hhmmss(duration)
-
-    text = QUIT_MSG_TEXT.format(
-        action="quit",
-        player_nickname=escape_md_v2(player_nickname),
-        timezone=escape_md_v2("(UTC)"),
-        time=escape_md_v2(now.strftime("%d/%m/%Y %H:%M:%S")),
-        spent_time=escape_md_v2(formatted_spent_time),
-    )
-
     channels = await db.get_channels(is_managed=True, status="administrator")
 
-    for channel in channels:
-        channel_id = channel["id"]
-        await bot.send_message(chat_id=channel_id, text=text, parse_mode="MarkdownV2")
+    session: TimeSession | None = await get_time_session(
+        player_request_body.meta.session_id
+    )
+
+    # Handle already exists
+    if session and session.quit_at is not None:
+        logger.info(
+            "Session already exists and has quit_at. No need to update the session."
+        )
+        return {"status": "ok"}
+
+    # Handle incorrect order.
+    if not session:
+        session = await create_time_session(
+            TimeSession(
+                session_id=player_request_body.meta.session_id,
+                player_id=player_request_body.player.uuid,
+                joined_at=None,
+                quit_at=now,
+            )
+        )
+        logger.info(
+            "Session doesn't exist but quit_at is provided. Created a new session with quit_at and without joined_at."
+        )
+        return {"status": "ok"}
+
+    # Handle normal case.
+    if session.joined_at is not None:
+        session: TimeSession | None = await update_time_session(
+            session.model_copy(update={"quit_at": now})
+        )
+        for channel in channels:
+            await bot.send_message(
+                chat_id=channel["id"],
+                text=get_quit_msg(
+                    player_nickname=player_request_body.player.name,
+                    timestamp=session.quit_at,
+                    duration=session.quit_at - session.joined_at,
+                ),
+                parse_mode="MarkdownV2",
+            )
 
     return {"status": "ok"}

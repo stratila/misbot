@@ -11,6 +11,7 @@ class Player(BaseModel):
 
 class Meta(BaseModel):
     message: Optional[str]
+    session_id: UUID
 
 
 class PlayerPostRequestBody(BaseModel):

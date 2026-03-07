@@ -6,6 +6,7 @@ load_dotenv()
 
 
 ENVIRONMENT = os.environ.get("ENVIRONMENT")
+SQL_ECHO = os.environ.get("SQL_ECHO")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
 URL_PATH = os.environ.get("URL_PATH")

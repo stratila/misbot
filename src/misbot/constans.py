@@ -15,3 +15,6 @@ QUIT_MSG_TEXT = (
     "Time {timezone}: _{time}_\n"
     "Time spent on server: __{spent_time}__"
 )
+
+
+TIMEFORMAT = "%d/%m/%Y %H:%M:%S"
