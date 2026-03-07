@@ -96,6 +96,9 @@ async def player_join(
         session: TimeSession | None = await update_time_session(
             session.model_copy(update={"joined_at": joined_at})
         )
+        if session is None:
+            logger.error("update_time_session returned None after join update.")
+            return {"status": "ok"}
 
         for channel in channels:
             await bot.send_message(
@@ -128,6 +131,9 @@ async def player_join(
                 joined_at=now,
             )
         )
+        if session is None:
+            logger.error("create_time_session returned None after join.")
+            return {"status": "ok"}
         for channel in channels:
             await bot.send_message(
                 chat_id=channel["id"],
@@ -172,6 +178,9 @@ async def player_quit(
                 quit_at=now,
             )
         )
+        if session is None:
+            logger.error("create_time_session returned None after quit.")
+            return {"status": "ok"}
         logger.info(
             "Session doesn't exist but quit_at is provided. Created a new session with quit_at and without joined_at."
         )
@@ -182,6 +191,9 @@ async def player_quit(
         session: TimeSession | None = await update_time_session(
             session.model_copy(update={"quit_at": now})
         )
+        if session is None:
+            logger.error("update_time_session returned None after quit update.")
+            return {"status": "ok"}
         for channel in channels:
             await bot.send_message(
                 chat_id=channel["id"],
