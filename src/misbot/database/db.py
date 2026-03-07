@@ -8,7 +8,7 @@ engine = create_async_engine(
     connect_args={
         "autocommit": False,
     },
-    echo=bool(SQL_ECHO),
+    echo=SQL_ECHO,
 )
 
 
