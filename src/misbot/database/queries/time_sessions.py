@@ -7,8 +7,6 @@ from misbot.database.db import engine
 from misbot.database.models import time_sessions
 from misbot.domain.models import TimeSession
 
-logging.getLogger(__name__)
-
 
 async def get_time_session(session_id: UUID) -> TimeSession | None:
     """Get a time session by session_id."""
