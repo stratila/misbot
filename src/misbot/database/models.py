@@ -1,12 +1,12 @@
 from sqlalchemy import (
     Boolean,
     Column,
-    Date,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Table,
+    Uuid,
 )
 from sqlalchemy.orm import declarative_base
 
@@ -32,15 +32,15 @@ channels = Table(
 players = Table(
     "players",
     Base.metadata,
-    Column("id", String, primary_key=True),
+    Column("id", Uuid(), primary_key=True),
     Column("seen", DateTime, nullable=False),
 )
 
-time_spent = Table(
-    "time_spent",
+time_sessions = Table(
+    "time_sessions",
     Base.metadata,
-    Column("id", Integer, primary_key=True),
-    Column("player_id", String, ForeignKey("players.id"), nullable=False),
-    Column("date", Date, nullable=False),
-    Column("duration", Integer, nullable=False),
+    Column("session_id", Uuid(), primary_key=True),
+    Column("player_id", Uuid(), ForeignKey("players.id"), nullable=False),
+    Column("joined_at", DateTime, nullable=True),
+    Column("quit_at", DateTime, nullable=True),
 )

@@ -14,18 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
-## [0.0.1] - 2026-01-29
+## [0.2.0] - 2026-03-07
+
+### Changed
+
+- Replaced `last_seen` player tracking with session-based approach to correctly handle out-of-order requests when calculating player time spent.
+
+
+## [0.1.0] - 2026-01-29
 
 ### Added
 
 - Initial raw implementation of the `misbot` web application, integrating a web server and a Telegram bot, with support for an SQLite database and Alembic migrations.
 
-### Changed
-### Deprecated
-### Removed
-### Fixed
-### Security
 
-[unreleased]: https://github.com/stratila/HookEmitter/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/stratila/HookEmitter/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/stratila/HookEmitter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/stratila/HookEmitter/compare/e639ed9...v0.1.0
 

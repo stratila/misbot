@@ -15,6 +15,16 @@ services:
         target: /app/db
     ports:
       - "8080:8080"
+  sqlite:
+    image: docker.io/nouchka/sqlite3:latest
+    volumes:
+      - type: volume
+        source: sqlite-db
+        target: /db
+    working_dir: /db
+    entrypoint: ["sqlite3", "botdb.sqlite"]
+    stdin_open: true
+    tty: true
 
 volumes:
   sqlite-db:
