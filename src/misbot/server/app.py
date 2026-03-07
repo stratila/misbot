@@ -114,8 +114,6 @@ async def player_quit(
         spent_time=escape_md_v2(formatted_spent_time),
     )
 
-    print(text)
-
     channels = await db.get_channels(is_managed=True, status="administrator")
 
     for channel in channels:
