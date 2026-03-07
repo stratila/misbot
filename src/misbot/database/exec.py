@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import insert, select, update
 
 from misbot.database.db import engine
-from misbot.database.models import channels, players, time_spent, users
+from misbot.database.models import channels, players, users
 
 
 async def get_user(user_id: int) -> dict[Any, Any] | None:
@@ -108,14 +108,4 @@ async def upsert_player(player_id: str, seen: datetime):
 
         if not updated:
             await conn.execute(insert(players).values(id=player_id, seen=seen))
-        await conn.commit()
-
-
-async def create_time_spent(player_id: str, target_date: date, duration: int):
-    async with engine.begin() as conn:
-        await conn.execute(
-            insert(time_spent).values(
-                player_id=player_id, date=target_date, duration=duration
-            )
-        )
         await conn.commit()
