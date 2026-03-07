@@ -84,9 +84,8 @@ async def player_join(
     # Handle incorrect order.
     if session and session.quit_at is not None:
         joined_at = now
-        # joined_at later timestamp
         duration = joined_at - session.quit_at
-        if duration.seconds < 0:
+        if duration.total_seconds() > 0:
             logger.info(
                 f"Session has quit_at but {joined_at=} is after {session.quit_at=}. This is an incorrect order."
                 "Setting duration to 0.",
