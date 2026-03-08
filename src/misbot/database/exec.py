@@ -96,16 +96,16 @@ async def get_player(player_id: str):
         return dict(player._mapping) if player else None
 
 
-async def upsert_player(player_id: str, seen: datetime):
+async def upsert_player(player_id: str, nickname: str):
     async with engine.begin() as conn:
         result = await conn.execute(
             update(players)
             .where(players.c.id == player_id)
-            .values(seen=seen)
+            .values(nickname=nickname)
             .returning(players.c.id)
         )
         updated = result.fetchone()
 
         if not updated:
-            await conn.execute(insert(players).values(id=player_id, seen=seen))
+            await conn.execute(insert(players).values(id=player_id, nickname=nickname))
         await conn.commit()

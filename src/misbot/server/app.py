@@ -67,8 +67,10 @@ async def player_join(
     now = datetime.now(tz=timezone.utc)
     channels = await db.get_channels(is_managed=True, status="administrator")
 
-    # Update player's last seen time or create a new player if it doesn't exist.
-    await db.upsert_player(player_id=player_request_body.player.uuid, seen=now)
+    await db.upsert_player(
+        player_id=player_request_body.player.uuid,
+        nickname=player_request_body.player.name,
+    )
 
     session: TimeSession | None = await get_time_session(
         player_request_body.meta.session_id
@@ -156,6 +158,11 @@ async def player_quit(
     bot: Bot = request.app.state.bot_app.bot
     now = datetime.now(tz=timezone.utc)
     channels = await db.get_channels(is_managed=True, status="administrator")
+
+    await db.upsert_player(
+        player_id=player_request_body.player.uuid,
+        nickname=player_request_body.player.name,
+    )
 
     session: TimeSession | None = await get_time_session(
         player_request_body.meta.session_id
