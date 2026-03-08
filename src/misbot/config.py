@@ -14,6 +14,7 @@ WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 ADMIN_USER_ID = os.environ.get("ADMIN_USER_ID")
 MANAGED_CHAT_IDS = os.environ.get("MANAGED_CHAT_IDS")
 SQLITE_DB_FILENAME = os.environ.get("SQLITE_DB_FILENAME")
+MC_SERVER_ADRESS = os.environ.get("MC_SERVER_ADRESS")
 
 
 def get_sqlite_connection_string():

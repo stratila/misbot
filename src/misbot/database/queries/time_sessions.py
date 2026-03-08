@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import insert, select, update
 
 from misbot.database.db import engine
-from misbot.database.models import time_sessions
-from misbot.domain.models import TimeSession
+from misbot.database.models import players, time_sessions
+from misbot.domain.models import Player, TimeSession
 
 
 async def get_time_session(session_id: UUID) -> TimeSession | None:
@@ -60,3 +60,21 @@ async def update_time_session(time_session: TimeSession) -> TimeSession | None:
             )
             return None
         return TimeSession(**updated._mapping)
+
+
+async def get_active_players() -> list[Player]:
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            select(
+                time_sessions.c.player_id.label("id"),
+                players.c.nickname,
+            )
+            .select_from(
+                time_sessions.join(players, time_sessions.c.player_id == players.c.id)
+            )
+            .where(
+                time_sessions.quit_at == None  # noqa: E711
+            )
+        )
+        active_users = [Player(**player._mapping) for player in result.fetchall()]
+        return active_users

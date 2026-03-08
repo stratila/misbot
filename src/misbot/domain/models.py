@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -16,3 +17,8 @@ class TimeSession(BaseModel):
             if dt is not None and dt.tzinfo is None:
                 data[field] = dt.replace(tzinfo=timezone.utc)
         super().__init__(**data)
+
+
+class Player(BaseModel):
+    id: UUID
+    nickname: Optional[str]

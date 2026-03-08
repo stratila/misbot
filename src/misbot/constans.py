@@ -16,5 +16,11 @@ QUIT_MSG_TEXT = (
     "Time spent on server: __{spent_time}__"
 )
 
+PLAYERS_ONLINE_TEXT = """
+IP: {server_address}\n
+Players online: {players_count}\n
+{players_list}
+"""
+
 
 TIMEFORMAT = "%d/%m/%Y %H:%M:%S"

@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta
 
-from misbot.constans import JOIN_MSG_TEXT, QUIT_MSG_TEXT, TIMEFORMAT
+from misbot.constans import (
+    JOIN_MSG_TEXT,
+    PLAYERS_ONLINE_TEXT,
+    QUIT_MSG_TEXT,
+    TIMEFORMAT,
+)
+from misbot.domain.models import Player
 from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
 
@@ -32,4 +38,17 @@ def get_quit_msg(
         timezone=escape_md_v2(f"({timezone_name})"),
         time=escape_md_v2(timestamp.strftime(TIMEFORMAT)),
         spent_time=escape_md_v2(formatted_spent_time),
+    )
+
+
+def get_players_online_msg(players: list[Player], server_address: str):
+    server_address = escape_md_v2(server_address)
+    players_count = len(players)
+    formatted_players_list = "\n".join(
+        [f"_{escape_md_v2(player.nickname or player.id)}_" for player in players]
+    )
+    return PLAYERS_ONLINE_TEXT.format(
+        server_address=server_address,
+        players_count=players_count,
+        players_list=formatted_players_list,
     )
