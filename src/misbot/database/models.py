@@ -1,7 +1,10 @@
+from enum import StrEnum
+
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    CheckConstraint,
     ForeignKey,
     Integer,
     String,
@@ -11,6 +14,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
+
+class ChannelType(StrEnum):
+    LOGGER = "logger"
+    ONLINE_MESSAGE = "online_message"
+
 
 users = Table(
     "users",
@@ -25,6 +34,7 @@ channels = Table(
     Base.metadata,
     Column("id", Integer, primary_key=True),
     Column("is_managed", Boolean, nullable=False, default=False),
+    Column("type", String, nullable=False),
     Column("status", String, nullable=True),
 )
 
