@@ -45,7 +45,7 @@
 ENVIRONMENT=dev
 TELEGRAM_BOT_TOKEN=<Your Bot Token>
 ADMIN_USER_ID=<Your user ID, example: "12345">
-MANAGED_CHAT_IDS=<Your channel ID, example: "-12345">
+MANAGED_LOGGER_CHAT_IDS=<Your channel ID, example: "-12345">
 
 SQLITE_DB_FILENAME=/app/db/botdb.sqlite
 

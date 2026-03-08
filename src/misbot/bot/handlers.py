@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.constants import ChatMemberStatus
 from telegram.ext import ChatMemberHandler, CommandHandler, ContextTypes, MessageHandler
 
-from misbot.config import ADMIN_USER_ID, MANAGED_CHAT_IDS
+from misbot.config import ADMIN_USER_ID, MANAGED_LOGGER_CHAT_IDS
 from misbot.constans import FIRST_MSG_TEXT, GREETING_MSG_TEXT
 from misbot.database import exec as db
 
@@ -92,7 +92,7 @@ async def callback_ack_chat_member(update: Update, context: ContextTypes.DEFAULT
 
 handler_ack_chat_member = ChatMemberHandler(
     callback=callback_ack_chat_member,
-    chat_id=[int(mid) for mid in MANAGED_CHAT_IDS.split(",")],
+    chat_id=[int(mid) for mid in MANAGED_LOGGER_CHAT_IDS.split(",")],
 )
 handler_message_echo = MessageHandler(filters=None, callback=callback_echo)
 handler_start_echo = CommandHandler("start", callback_start)

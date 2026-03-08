@@ -12,7 +12,7 @@ WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
 URL_PATH = os.environ.get("URL_PATH")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 ADMIN_USER_ID = os.environ.get("ADMIN_USER_ID")
-MANAGED_CHAT_IDS = os.environ.get("MANAGED_CHAT_IDS")
+MANAGED_LOGGER_CHAT_IDS = os.environ.get("MANAGED_LOGGER_CHAT_IDS")
 SQLITE_DB_FILENAME = os.environ.get("SQLITE_DB_FILENAME")
 MC_SERVER_ADRESS = os.environ.get("MC_SERVER_ADRESS")
 
