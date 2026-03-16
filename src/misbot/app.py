@@ -7,6 +7,7 @@ from telegram.ext import Application
 from uvicorn import Server
 
 from misbot.bot.app import get_bot_app
+from misbot.bot_helper.app import get_bot_app_helper
 from misbot.config import ENVIRONMENT, WEBHOOK_SECRET_TOKEN, WEBHOOK_URL
 from misbot.database.db import engine
 from misbot.server import init_uvicorn_server
@@ -35,16 +36,19 @@ async def setup_webhook(bot_app: Application):
 
 async def main():
     bot_app = get_bot_app()
+    helper_bot = get_bot_app_helper()
     server = init_uvicorn_server(app=fastapi_app)
 
     async with bot_app:
-        await bot_app.start()
+        # await bot_app.start()
+        await helper_bot.initialize()
+        await helper_bot.start()
 
         if ENVIRONMENT == "prod":
             await setup_webhook(bot_app)
             await server.serve()
         else:
-            await run_polling(bot_app, server)
+            await run_polling(helper_bot, server)
 
         with contextlib.suppress(asyncio.CancelledError):
             await bot_app.stop()

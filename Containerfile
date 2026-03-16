@@ -28,6 +28,11 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 
 
 FROM deps AS dev
+
+RUN apt-get update \
+    && apt-get install -y sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 # Install project as editable (points to /app)
 RUN --mount=type=cache,target=/root/.cache/uv \

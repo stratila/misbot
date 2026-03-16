@@ -7,6 +7,7 @@ from sqlalchemy import (
     String,
     Table,
     Uuid,
+    Text,
 )
 from sqlalchemy.orm import declarative_base
 
@@ -36,6 +37,7 @@ players = Table(
     Column("seen", DateTime, nullable=False),
 )
 
+
 time_sessions = Table(
     "time_sessions",
     Base.metadata,
@@ -43,4 +45,13 @@ time_sessions = Table(
     Column("player_id", Uuid(), ForeignKey("players.id"), nullable=False),
     Column("joined_at", DateTime, nullable=True),
     Column("quit_at", DateTime, nullable=True),
+)
+
+
+info_block = Table(
+    "info_block",
+    Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("question", String, nullable=False),
+    Column("answer", Text, nullable=False),
 )

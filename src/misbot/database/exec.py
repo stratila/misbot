@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import insert, select, update
+from sqlalchemy import insert, select, update, func
 
 from misbot.database.db import engine
-from misbot.database.models import channels, players, users
+from misbot.database.models import channels, players, users, info_block
 
 
 async def get_user(user_id: int) -> dict[Any, Any] | None:
@@ -109,3 +109,48 @@ async def upsert_player(player_id: str, seen: datetime):
         if not updated:
             await conn.execute(insert(players).values(id=player_id, seen=seen))
         await conn.commit()
+
+
+async def get_info_block(info_block_id: int):
+    async with engine.connect() as conn:
+        result = await conn.execute(
+            select(info_block).where(
+                info_block.c.id == info_block_id,
+            ),
+        )
+        row = result.fetchone()
+        return dict(row._mapping) if row else "ERROR:404"
+
+
+async def get_info_blocks(page_number: int):
+    records_per_page = 5
+    offset = (page_number - 1) * records_per_page
+    async with engine.connect() as conn:
+        result = await conn.execute(
+            select(info_block)
+            .offset(offset)
+            .limit(records_per_page)
+            .order_by(info_block.c.id)
+        )
+        rows = result.fetchall()
+        if not rows:
+            return "ERROR:404"
+        return [dict(row._mapping) for row in rows]
+
+
+async def create_info_block(question: str, answer: str):
+    async with engine.begin() as conn:
+        values = {
+            "question": question,
+            "answer": answer,
+        }
+        await conn.execute(
+            insert(info_block).values(**values),
+        )
+        await conn.commit()
+
+
+async def get_info_blocks_count() -> int:
+    async with engine.connect() as conn:
+        result = await conn.execute(select(func.count()).select_from(info_block))
+        return result.scalar() or 0
