@@ -36,19 +36,16 @@ async def setup_webhook(bot_app: Application):
 
 async def main():
     bot_app = get_bot_app()
-    helper_bot = get_bot_app_helper()
     server = init_uvicorn_server(app=fastapi_app)
 
     async with bot_app:
-        # await bot_app.start()
-        await helper_bot.initialize()
-        await helper_bot.start()
+        await bot_app.start()
 
         if ENVIRONMENT == "prod":
             await setup_webhook(bot_app)
             await server.serve()
         else:
-            await run_polling(helper_bot, server)
+            await run_polling(bot_app, server)
 
         with contextlib.suppress(asyncio.CancelledError):
             await bot_app.stop()
