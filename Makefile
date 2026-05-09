@@ -22,7 +22,7 @@ up: build
 	-@podman pod create --name $(POD_NAME) --userns auto -p 8443:443 -p 8080:80
 
 	@echo "Starting nginx..."
-	-@podman run -d \
+	-@podman run \
 		--name $(NGINX_NAME) \
 		--pod $(POD_NAME) \
 		--mount type=bind,src=$(SSL_DIR),target=/ssl,ro \
@@ -31,7 +31,7 @@ up: build
 		$(IMAGE_NGINX)
 
 	@echo "Starting app..."
-	-@podman run -d \
+	-@podman run \
 		--name $(APP_NAME) \
 		--pod $(POD_NAME) \
 		-v $(VOLUME_DB):/app/db \
