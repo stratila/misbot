@@ -47,7 +47,10 @@ async def webhook(
     if not x_telegram_bot_api_secret_token:
         return HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
 
-    if x_telegram_bot_api_secret_token != settings.telegram_bot.webhook_secret_token:
+    if (
+        x_telegram_bot_api_secret_token
+        != settings.telegram_bot.webhook_secret_token.get_secret_value()
+    ):
         logger.info(
             "X-Telegram-Bot-Api-Secret-Token header's value is wrong or missing."
         )

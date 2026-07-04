@@ -1,8 +1,8 @@
-import os
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 
-from pydantic import BaseModel, Field, FilePath, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,7 +16,7 @@ class DatabaseSettings(BaseModel):
         default=False,
         description="SQLAlchemy verbose query log mode",
     )
-    db_file: FilePath
+    db_file: Path
 
     @property
     def sqlite_connection_string(self):
@@ -38,12 +38,6 @@ class TelegramBotSettings(BaseModel):
     )
 
 
-class SecuritySettings(BaseModel):
-    secret_key: SecretStr
-    algorithm: str
-    access_token_expire_minutes: int = 30
-
-
 class ChannelSettings(BaseModel):
     admin_user_id: int
     managed_chat_ids: list[int]
@@ -52,12 +46,13 @@ class ChannelSettings(BaseModel):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # .env has priority over .dev.env
-        env_file=(".dev.env ", ".env")
+        env_file=(".env.dev", ".env"),
+        env_prefix="MISBOT_",
+        env_nested_delimiter="__",
     )
 
     environment: RuntimeEnvironment
     telegram_bot: TelegramBotSettings
-    security: SecuritySettings
     database: DatabaseSettings
     channel: ChannelSettings
 

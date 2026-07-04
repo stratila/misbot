@@ -18,7 +18,7 @@ def get_bot_app() -> Application:
     if _bot_app is None:
         _bot_app = (
             ApplicationBuilder()
-            .token(settings.telegram_bot.token)
+            .token(settings.telegram_bot.token.get_secret_value())
             .get_updates_pool_timeout(20)
             .build()
         )

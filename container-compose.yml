@@ -5,7 +5,7 @@ services:
       target: "dev"
       dockerfile: Containerfile
     env_file:
-      - .dev.env
+      - .env.dev
     volumes:
       - type: bind
         source: .

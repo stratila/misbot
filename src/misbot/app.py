@@ -30,7 +30,7 @@ async def setup_webhook(bot_app: Application):
     bot_app.updater = None
     await bot_app.bot.set_webhook(
         url=settings.telegram_bot.webhook_url,
-        secret_token=settings.telegram_bot.webhook_secret_token,
+        secret_token=settings.telegram_bot.webhook_secret_token.get_secret_value(),
         allowed_updates=Update.ALL_TYPES,
     )
 
