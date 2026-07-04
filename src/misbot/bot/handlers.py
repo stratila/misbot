@@ -4,9 +4,11 @@ from telegram import Update
 from telegram.constants import ChatMemberStatus
 from telegram.ext import ChatMemberHandler, CommandHandler, ContextTypes, MessageHandler
 
-from misbot.config import ADMIN_USER_ID, MANAGED_CHAT_IDS
+from misbot.config import get_settings
 from misbot.constans import FIRST_MSG_TEXT, GREETING_MSG_TEXT
 from misbot.database import exec as db
+
+settings = get_settings()
 
 
 async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,7 +18,11 @@ async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"User for {update.effective_chat.id=} not found in the database, creating."
         )
 
-        is_admin = True if str(update.effective_chat.id) == ADMIN_USER_ID else False
+        is_admin = (
+            True
+            if update.effective_chat.id == settings.channel.admin_user_id
+            else False
+        )
         await db.create_user(
             update.effective_chat.id,
             is_admin=is_admin,
@@ -46,7 +52,7 @@ async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if (
         update.channel_post
         and update.channel_post.from_user
-        and update.channel_post.from_user.id == int(ADMIN_USER_ID)
+        and update.channel_post.from_user.id == settings.channel.admin_user_id
     ):
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -92,7 +98,7 @@ async def callback_ack_chat_member(update: Update, context: ContextTypes.DEFAULT
 
 handler_ack_chat_member = ChatMemberHandler(
     callback=callback_ack_chat_member,
-    chat_id=[int(mid) for mid in MANAGED_CHAT_IDS.split(",")],
+    chat_id=settings.channel.managed_chat_ids,
 )
 handler_message_echo = MessageHandler(filters=None, callback=callback_echo)
 handler_start_echo = CommandHandler("start", callback_start)

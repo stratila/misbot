@@ -1,14 +1,16 @@
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from misbot.config import SQL_ECHO, get_sqlite_connection_string
+from misbot.config import get_settings
+
+settings = get_settings()
 
 engine = create_async_engine(
-    get_sqlite_connection_string(),
+    url=settings.database.sqlite_connection_string,
     connect_args={
         "autocommit": False,
     },
-    echo=SQL_ECHO,
+    echo=settings.database.sql_echo,
 )
 
 

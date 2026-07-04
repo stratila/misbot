@@ -5,7 +5,9 @@ from misbot.bot.handlers import (
     handler_message_echo,
     handler_start_echo,
 )
-from misbot.config import TELEGRAM_BOT_TOKEN
+from misbot.config import get_settings
+
+settings = get_settings()
 
 _bot_app: Application | None = None
 
@@ -16,7 +18,7 @@ def get_bot_app() -> Application:
     if _bot_app is None:
         _bot_app = (
             ApplicationBuilder()
-            .token(TELEGRAM_BOT_TOKEN)
+            .token(settings.telegram_bot.token.get_secret_value())
             .get_updates_pool_timeout(20)
             .build()
         )

@@ -7,7 +7,7 @@ from telegram.ext import Application
 from uvicorn import Server
 
 from misbot.bot.app import get_bot_app
-from misbot.config import ENVIRONMENT, WEBHOOK_SECRET_TOKEN, WEBHOOK_URL
+from misbot.config import RuntimeEnvironment, get_settings
 from misbot.database.db import engine
 from misbot.server import init_uvicorn_server
 from misbot.server.app import fastapi_app
@@ -15,6 +15,8 @@ from misbot.server.app import fastapi_app
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+
+settings = get_settings()
 
 
 async def run_polling(bot_app: Application, server: Server):
@@ -27,9 +29,9 @@ async def run_polling(bot_app: Application, server: Server):
 async def setup_webhook(bot_app: Application):
     bot_app.updater = None
     await bot_app.bot.set_webhook(
-        url=WEBHOOK_URL,
+        url=settings.telegram_bot.webhook_url,
+        secret_token=settings.telegram_bot.webhook_secret_token.get_secret_value(),
         allowed_updates=Update.ALL_TYPES,
-        secret_token=WEBHOOK_SECRET_TOKEN,
     )
 
 
@@ -40,7 +42,7 @@ async def main():
     async with bot_app:
         await bot_app.start()
 
-        if ENVIRONMENT == "prod":
+        if settings.environment == RuntimeEnvironment.PROD:
             await setup_webhook(bot_app)
             await server.serve()
         else:

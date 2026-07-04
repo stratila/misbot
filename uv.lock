@@ -1,6 +1,10 @@
 version = 1
 revision = 3
 requires-python = ">=3.12"
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version < '3.14'",
+]
 
 [[package]]
 name = "aiosqlite"
@@ -481,7 +485,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
     { name = "fastapi", extra = ["standard"] },
-    { name = "python-dotenv" },
+    { name = "pydantic-settings" },
     { name = "python-telegram-bot", extra = ["webhooks"] },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
@@ -499,7 +503,7 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "alembic", specifier = ">=1.18.1" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.128.0" },
-    { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-telegram-bot", extras = ["webhooks"], specifier = ">=22.5" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.45" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.40.0" },

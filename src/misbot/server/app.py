@@ -9,7 +9,7 @@ from telegram import Bot, Update
 from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
-from misbot.config import WEBHOOK_SECRET_TOKEN
+from misbot.config import get_settings
 from misbot.database import exec as db
 from misbot.database.queries.time_sessions import (
     create_time_session,
@@ -21,6 +21,8 @@ from misbot.server.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPostRequestBody
 
 logger = logging.getLogger(__name__)
+
+settings = get_settings()
 
 
 @asynccontextmanager
@@ -45,7 +47,10 @@ async def webhook(
     if not x_telegram_bot_api_secret_token:
         return HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
 
-    if x_telegram_bot_api_secret_token != WEBHOOK_SECRET_TOKEN:
+    if (
+        x_telegram_bot_api_secret_token
+        != settings.telegram_bot.webhook_secret_token.get_secret_value()
+    ):
         logger.info(
             "X-Telegram-Bot-Api-Secret-Token header's value is wrong or missing."
         )
