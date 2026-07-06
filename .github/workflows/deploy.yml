@@ -1,0 +1,59 @@
+name: Deploy misbot application
+
+on:
+    push:
+        branches:
+            - feat/quadlet-deploy
+
+jobs:
+    set-env:
+        runs-on: ubuntu-latest
+        outputs:
+            environment: ${{ steps.pick.outputs.environment }}
+        steps:
+            - id: pick
+              run: |
+                  if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                    echo "environment=prod" >> "$GITHUB_OUTPUT"
+                  elif [[ "${{ github.ref }}" == "refs/heads/feat/quadlet-deploy" ]]; then
+                    echo "environment=prod" >> "$GITHUB_OUTPUT"
+                  #else
+                  #echo "environment=dev" >> "$GITHUB_OUTPUT"
+                  fi
+
+    deploy:
+        needs: set-env
+        runs-on: ubuntu-latest
+        environment: ${{ needs.set-env.outputs.environment }}
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v7
+
+            - name: Set up SSH agent
+              uses: webfactory/ssh-agent@v0.10.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
+
+            - name: Add host to known_hosts
+              run: |
+                  mkdir -p ~./ssh
+                  ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+            - name: Write application .env file
+              run: |
+                  cat <<EOF > .env
+                  MISBOT_ENVIRONMENT=prod
+                  MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
+                  MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
+                  MISBOT_DATABASE__SQL_ECHO=False
+                  MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
+                  MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
+                  MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
+                  EOF
+
+            - name: Deploy files to host
+              run: |
+                  ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
+                  scp quadlets/misbot-* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
+                  scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
+                  ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
