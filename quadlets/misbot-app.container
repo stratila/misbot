@@ -6,7 +6,7 @@ Wants=network-online.target podman.service
 [Container]
 Image=localhost/misbot:latest
 ContainerName=misbot-app
-PublishPort=8080:8080
+PublishPort=127.0.0.1:8181:8080
 Volume=misbot-db.volume:/app/db:Z
 EnvironmentFile=%h/.config/misbot/.env
 Label=app=misbot
