@@ -39,6 +39,11 @@ def tatus():
     return {"status": "ok"}
 
 
+@fastapi_app.get("/dron")
+def dron():
+    return {"gunwest": "pepe"}
+
+
 @fastapi_app.post("/webhook")
 async def webhook(
     request: Request,

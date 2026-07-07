@@ -34,20 +34,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Extract metadata (tags, labels)
-      #   id: meta
-      #   uses: docker/metadata-action@v5
-      #   with:
-      #     images: ${{ env.IMAGE_NAME }}
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
 
       - name: Build and push prod image
         uses: docker/build-push-action@v6
@@ -56,69 +59,74 @@ jobs:
           file: Containerfile
           target: prod
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
-          # tags: ${{ steps.meta.outputs.tags }}
-          # labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs:
-      - set-env
-      - build
-    runs-on: ubuntu-latest
-    environment: ${{ needs.set-env.outputs.environment }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v7
-
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.10.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
-
-      - name: Add host to known_hosts
+      - name: Pick immutable tag for deploy
+        id: pick
         run: |
-          mkdir -p ~./ssh
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          REF=$(echo "${{ steps.meta.outputs.tags }}" | grep 'sha-')
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
 
-      - name: Write application .env file
-        run: |
-          cat <<EOF > .env
-          MISBOT_ENVIRONMENT=prod
-          MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
-          MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
-          MISBOT_TELEGRAM_BOT__WEBHOOK_URL=${{secrets.WEBHOOK_URL}}
-          MISBOT_DATABASE__SQL_ECHO=False
-          MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
-          MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
-          MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
-          EOF
+  # deploy:
+  #   needs:
+  #     - set-env
+  #     - build
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ needs.set-env.outputs.environment }}
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v7
 
-      - name: Stop the service
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user stop misbot-app.service || true"
+  #     - name: Set up SSH agent
+  #       uses: webfactory/ssh-agent@v0.10.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
 
-      - name: Login to GHCR on remote host
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-          "podman login ghcr.io -u ${{ github.actor }} --password-stdin" \
-          <<< "${{ secrets.GITHUB_TOKEN }}"
+  #     - name: Add host to known_hosts
+  #       run: |
+  #         mkdir -p ~./ssh
+  #         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Pull image
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "podman pull ghcr.io/${{ github.repository }}:latest"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "podman tag ghcr.io/${{ github.repository }}:latest localhost/misbot:latest"
+  #     - name: Write application .env file
+  #       run: |
+  #         cat <<EOF > .env
+  #         MISBOT_ENVIRONMENT=prod
+  #         MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
+  #         MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
+  #         MISBOT_TELEGRAM_BOT__WEBHOOK_URL=${{secrets.WEBHOOK_URL}}
+  #         MISBOT_DATABASE__SQL_ECHO=False
+  #         MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
+  #         MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
+  #         MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
+  #         EOF
 
-      - name: Deploy files to host
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
-          scp quadlets/misbot-* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
-          scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
+  #     - name: Stop the service
+  #       run: |
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user stop misbot-app.service || true"
+
+  #     - name: Login to GHCR on remote host
+  #       run: |
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+  #         "podman login ghcr.io -u ${{ github.actor }} --password-stdin" \
+  #         <<< "${{ secrets.GITHUB_TOKEN }}"
+
+  #     - name: Pull image
+  #       run: |
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+  #           "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+  #           "podman pull ghcr.io/${{ github.repository }}:latest"
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+  #           "podman tag ghcr.io/${{ github.repository }}:latest localhost/misbot:latest"
+
+  #     - name: Deploy files to host
+  #       run: |
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
+  #         scp quadlets/misbot-* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
+  #         scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
