@@ -3,7 +3,7 @@ name: Deploy misbot application
 on:
   push:
     branches:
-      - feat/quadlet-deploy
+      - main
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
