@@ -1,13 +1,16 @@
 #!/usr/bin/env sh
 set -e
 
-if [ "$#" -gt 0 ]; then
-  echo "Executing override command..."
-  exec "$@"
+echo "[misbot entrypoint.sh] EXECUTE_MIGRATIONS=${EXECUTE_MIGRATIONS:-false}"
+
+if [ "${EXECUTE_MIGRATIONS:-false}" = "true" ]; then
+    echo "[misbot entrypoint.sh] Performing database migrations"
+    /opt/venv/bin/alembic -c /app/alembic.ini upgrade head
 fi
 
-echo "Running database migrations..."
-/opt/venv/bin/alembic -c /app/alembic.ini upgrade head
+if [ "$#" -eq 0 ]; then
+    echo "[misbot entrypoint.sh] No command specified"
+    exit 1
+fi
 
-echo "Starting application..."
-exec /opt/venv/bin/python -m misbot.app
+exec "$@"

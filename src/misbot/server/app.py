@@ -35,13 +35,8 @@ fastapi_app = FastAPI(lifespan=lifespan)
 
 
 @fastapi_app.get("/")
-def tatus():
+def status():
     return {"status": "ok"}
-
-
-@fastapi_app.get("/dron")
-def dron():
-    return {"gunwest": "pepe"}
 
 
 @fastapi_app.post("/webhook")

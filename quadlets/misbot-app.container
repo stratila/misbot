@@ -9,6 +9,7 @@ ContainerName=misbot-app
 PublishPort=127.0.0.1:8181:8080
 Volume=misbot-db.volume:/app/db:Z
 EnvironmentFile=%h/.config/misbot/.env
+Environment=EXECUTE_MIGRATIONS=false
 Label=app=misbot
 
 
