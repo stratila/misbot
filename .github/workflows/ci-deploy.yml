@@ -10,6 +10,9 @@ jobs:
         uses: ./.github/workflows/test.yml
 
     build-and-push:
+        permissions:
+            contents: read
+            packages: write
         needs: test
         uses: ./.github/workflows/build-and-push.yml
         secrets: inherit
