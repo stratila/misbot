@@ -1,0 +1,15 @@
+name: CI pipeline for application deployment
+
+on:
+    push:
+        branches:
+            - feat/quadlet-deploy
+
+jobs:
+    test:
+        uses: ./.github/workflows/test.yml
+
+    build-and-push:
+        needs: test
+        uses: ./.github/workflows/build-and-push.yml
+        secrets: inherit
