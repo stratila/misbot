@@ -81,16 +81,14 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "podman pull ghcr.io/${{ github.repository }}:${{ inputs.image_tag}}"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "podman tag ghcr.io/${{ github.repository }}:${{ inputs.image_tag}} localhost/misbot:latest"
+            "podman pull ${{ inputs.image_tag }}"
 
       - name: Render quadlet template
         run: |
           mkdir -p /tmp/quadlets
           sed \
-            -e "s/{VERSION}/${{ inputs.image_tag }}/g" \
-            -e "s/{PORT}/${{ vars.PORT }}/g" \
+            -e "s|{IMAGE}|${{ inputs.image_tag }}|g" \
+            -e "s|{PORT}|${{ vars.PORT }}|g" \
             quadlets/misbot-app.container > /tmp/quadlets/misbot-app.container
           cp quadlets/misbot-db.volume /tmp/quadlets/misbot-db.volume
 
