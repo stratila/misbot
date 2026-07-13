@@ -4,9 +4,9 @@ After=network-online.target podman.service
 Wants=network-online.target podman.service
 
 [Container]
-Image=localhost/misbot:latest
+Image=localhost/misbot:{VERSION}
 ContainerName=misbot-app
-PublishPort=127.0.0.1:8181:8080
+PublishPort=127.0.0.1:{PORT}:8080
 Volume=misbot-db.volume:/app/db:Z
 EnvironmentFile=%h/.config/misbot/.env
 Environment=EXECUTE_MIGRATIONS=false

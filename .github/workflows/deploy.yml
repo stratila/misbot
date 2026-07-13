@@ -1,40 +1,31 @@
 name: Deploy misbot application
 
 on:
-  push:
-    branches:
-      - main
-
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev, production]
+        required: true
+      image_tag:
+        description: "e.g. ghcr.io/org/app:sha-abc1234"
+        required: true
+        type: string
 
 jobs:
-  set-env:
+  setup:
     runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.pick.outputs.environment }}
-    steps:
-      - id: pick
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "environment=prod" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == "refs/heads/feat/quadlet-deploy" ]]; then
-            echo "environment=prod" >> "$GITHUB_OUTPUT"
-          #else
-          #echo "environment=dev" >> "$GITHUB_OUTPUT"
-          fi
-
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.2.0
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -43,90 +34,71 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-,format=short
+  deploy:
+    needs:
+      - setup
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
 
-      - name: Build and push prod image
-        uses: docker/build-push-action@v6
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
         with:
-          context: .
-          file: Containerfile
-          target: prod
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
 
-      - name: Pick immutable tag for deploy
-        id: pick
+      - name: Add host to known_hosts
         run: |
-          REF=$(echo "${{ steps.meta.outputs.tags }}" | grep 'sha-')
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          mkdir -p ~./ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-  # deploy:
-  #   needs:
-  #     - set-env
-  #     - build
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ needs.set-env.outputs.environment }}
-  #   steps:
-  #     - name: Checkout repo
-  #       uses: actions/checkout@v7
+      - name: Write application .env file
+        run: |
+          cat <<EOF > .env
+          MISBOT_ENVIRONMENT=prod
+          MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
+          MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
+          MISBOT_TELEGRAM_BOT__WEBHOOK_URL=${{secrets.WEBHOOK_URL}}
+          MISBOT_DATABASE__SQL_ECHO=False
+          MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
+          MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
+          MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
+          EOF
 
-  #     - name: Set up SSH agent
-  #       uses: webfactory/ssh-agent@v0.10.0
-  #       with:
-  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
+      - name: Stop the service
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user stop misbot-app.service || true"
 
-  #     - name: Add host to known_hosts
-  #       run: |
-  #         mkdir -p ~./ssh
-  #         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+      - name: Login to GHCR on remote host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          "podman login ghcr.io -u ${{ github.actor }} --password-stdin" \
+          <<< "${{ secrets.GITHUB_TOKEN }}"
 
-  #     - name: Write application .env file
-  #       run: |
-  #         cat <<EOF > .env
-  #         MISBOT_ENVIRONMENT=prod
-  #         MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
-  #         MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
-  #         MISBOT_TELEGRAM_BOT__WEBHOOK_URL=${{secrets.WEBHOOK_URL}}
-  #         MISBOT_DATABASE__SQL_ECHO=False
-  #         MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
-  #         MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
-  #         MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
-  #         EOF
+      - name: Pull image
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "podman pull ghcr.io/${{ github.repository }}:${{ inputs.image_tag}}"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "podman tag ghcr.io/${{ github.repository }}:${{ inputs.image_tag}} localhost/misbot:latest"
 
-  #     - name: Stop the service
-  #       run: |
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user stop misbot-app.service || true"
+      - name: Render quadlet template
+        run: |
+          mkdir -p /tmp/quadlets
+          sed \
+            -e "s/{VERSION}/${{ inputs.image_tag }}/g" \
+            -e "s/{PORT}/${{ vars.PORT }}/g" \
+            quadlets/misbot-app.container > /tmp/quadlets/misbot-app.container
+          cp quadlets/misbot-db.volume /tmp/quadlets/misbot-db.volume
 
-  #     - name: Login to GHCR on remote host
-  #       run: |
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-  #         "podman login ghcr.io -u ${{ github.actor }} --password-stdin" \
-  #         <<< "${{ secrets.GITHUB_TOKEN }}"
-
-  #     - name: Pull image
-  #       run: |
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-  #           "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-  #           "podman pull ghcr.io/${{ github.repository }}:latest"
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-  #           "podman tag ghcr.io/${{ github.repository }}:latest localhost/misbot:latest"
-
-  #     - name: Deploy files to host
-  #       run: |
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
-  #         scp quadlets/misbot-* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
-  #         scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
+      - name: Deploy files to host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
+          scp /tmp/quadlets/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
+          scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
