@@ -1,0 +1,102 @@
+name: Deploy misbot application
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev, prod]
+        required: true
+      image_tag:
+        description: "e.g. ghcr.io/org/app:sha-abc1234"
+        required: true
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    needs:
+      - setup
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY}}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Write application .env file
+        run: |
+          cat <<EOF > .env
+          MISBOT_ENVIRONMENT=prod
+          MISBOT_TELEGRAM_BOT__TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}}
+          MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=${{secrets.WEBHOOK_SECRET_TOKEN}}
+          MISBOT_TELEGRAM_BOT__WEBHOOK_URL=${{secrets.WEBHOOK_URL}}
+          MISBOT_DATABASE__SQL_ECHO=False
+          MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
+          MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
+          MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
+          EOF
+
+      - name: Stop the service
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user stop misbot-app.service || true"
+
+      - name: Login to GHCR on remote host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          "podman login ghcr.io -u ${{ github.actor }} --password-stdin" \
+          <<< "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Pull image
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "podman image rm -fi $(podman image ls -qa --filter reference=misbot) || true"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "podman pull ${{ inputs.image_tag }}"
+
+      - name: Render quadlet template
+        run: |
+          mkdir -p /tmp/quadlets
+          sed \
+            -e "s|{IMAGE}|${{ inputs.image_tag }}|g" \
+            -e "s|{PORT}|${{ vars.PORT }}|g" \
+            quadlets/misbot-app.container > /tmp/quadlets/misbot-app.container
+          cp quadlets/misbot-db.volume /tmp/quadlets/misbot-db.volume
+
+      - name: Deploy files to host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/.config/containers/systemd ~/.config/misbot"
+          scp /tmp/quadlets/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
+          scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
