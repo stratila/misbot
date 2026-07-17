@@ -13,7 +13,7 @@ on:
     inputs:
       environment:
         type: choice
-        options: [dev, production]
+        options: [dev, prod]
         required: true
       image_tag:
         description: "e.g. ghcr.io/org/app:sha-abc1234"
@@ -50,7 +50,7 @@ jobs:
 
       - name: Add host to known_hosts
         run: |
-          mkdir -p ~./ssh
+          mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Write application .env file
