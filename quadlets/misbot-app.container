@@ -1,0 +1,21 @@
+[Unit]
+Description=misbot application web server
+After=network-online.target podman.service
+Wants=network-online.target podman.service
+
+[Container]
+Image={IMAGE}
+ContainerName=misbot-app
+PublishPort=127.0.0.1:{PORT}:8080
+Volume=misbot-db.volume:/app/db:Z
+EnvironmentFile=%h/.config/misbot/.env
+Environment=EXECUTE_MIGRATIONS=false
+Label=app=misbot
+
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

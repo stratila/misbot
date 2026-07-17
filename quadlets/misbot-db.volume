@@ -1,0 +1,6 @@
+[Volume]
+VolumeName=misbot-db
+Label=app=misbot
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,14 @@
+name: CI Pipeline for pull requests to dev branch
+
+on:
+    pull_request:
+        branches:
+            - dev
+        types:
+            - opened
+            - reopened
+            - synchronize
+
+jobs:
+    test:
+        uses: ./.github/workflows/test.yml

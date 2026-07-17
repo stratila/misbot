@@ -35,7 +35,7 @@ fastapi_app = FastAPI(lifespan=lifespan)
 
 
 @fastapi_app.get("/")
-def tatus():
+def status():
     return {"status": "ok"}
 
 
