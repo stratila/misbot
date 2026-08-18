@@ -43,6 +43,13 @@ class ChannelSettings(BaseModel):
     managed_chat_ids: list[int]
 
 
+class AuthorizationSettings(BaseModel):
+    issuer: str
+    audience: str
+    token_url: str
+    jwks_url: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # .env has priority over .dev.env
@@ -55,6 +62,7 @@ class Settings(BaseSettings):
     telegram_bot: TelegramBotSettings
     database: DatabaseSettings
     channel: ChannelSettings
+    auth: AuthorizationSettings
 
 
 @lru_cache(maxsize=1)
