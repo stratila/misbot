@@ -90,10 +90,12 @@ jobs:
       - name: Render quadlet template
         run: |
           mkdir -p /tmp/quadlets
-          sed \
-            -e "s|{IMAGE}|${{ inputs.image_tag }}|g" \
-            -e "s|{PORT}|${{ vars.PORT }}|g" \
-            quadlets/misbot-app.container > /tmp/quadlets/misbot-app.container
+          for unit in quadlets/*.container; do
+            sed \
+              -e "s|{IMAGE}|${{ inputs.image_tag }}|g" \
+              -e "s|{PORT}|${{ vars.PORT }}|g" \
+              "$unit" > "/tmp/quadlets/$(basename "$unit")"
+          done
           cp quadlets/misbot-db.volume /tmp/quadlets/misbot-db.volume
 
       - name: Deploy files to host
@@ -102,5 +104,24 @@ jobs:
           scp /tmp/quadlets/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/containers/systemd/
           scp .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/.config/misbot/.env
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod 600 ~/.config/misbot/.env"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user daemon-reload"
+
+      - name: Apply migrations
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "systemctl --user daemon-reload && systemctl --user restart misbot-app-migrate.service"
+
+      - name: Start the service
+        run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl --user start misbot-app.service"
+
+      - name: Check migrations succeeded
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            if ! systemctl --user is-active --quiet misbot-app-migrate.service; then
+              echo "::error::database migrations failed"
+              systemctl --user status misbot-app-migrate.service --no-pager || true
+              podman logs --tail 50 misbot-app-migrate || true
+              exit 1
+            fi
+            echo "migrations applied"
+          '
