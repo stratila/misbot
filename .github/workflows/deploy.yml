@@ -64,6 +64,10 @@ jobs:
           MISBOT_DATABASE__DB_FILE=${{secrets.DB_FILE}}
           MISBOT_CHANNEL__ADMIN_USER_ID=${{secrets.ADMIN_USER_ID}}
           MISBOT_CHANNEL__MANAGED_CHAT_IDS=${{secrets.MANAGED_CHAT_IDS}}
+          MISBOT_AUTH__ISSUER=${{secrets.ISSUER}}
+          MISBOT_AUTH__AUDIENCE=${{secrets.AUDIENCE}}
+          MISBOT_AUTH__TOKEN_URL=${{secrets.TOKEN_URL}}
+          MISBOT_AUTH__JWKS_URL=${{secrets.JWKS_URL}}
           EOF
 
       - name: Stop the service

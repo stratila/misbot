@@ -41,18 +41,63 @@
 
 2. Populate it with the following environment variables using your actual values instead of the placeholders:
 
-```
-ENVIRONMENT=dev
-TELEGRAM_BOT_TOKEN=<Your Bot Token>
-ADMIN_USER_ID=<Your user ID, example: "12345">
-MANAGED_CHAT_IDS=<Your channel ID, example: "-12345">
 
-SQLITE_DB_FILENAME=/app/db/botdb.sqlite
+```
+MISBOT_ENVIRONMENT=dev
+MISBOT_TELEGRAM_BOT__TOKEN=<Your Bot Token>
 
 # The following can be ignored; they are used in production.
-# WEBHOOK_URL=
-# WEBHOOK_SECRET_TOKEN=
+MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=abc
+MISBOT_TELEGRAM_BOT__WEBHOOK_URL=bc://dev.com
+
+
+MISBOT_DATABASE__SQL_ECHO=True
+MISBOT_DATABASE__DB_FILE=/app/db/botdb.sqlite
+MISBOT_CHANNEL__ADMIN_USER_ID=<Your user ID, example: "12345">
+MISBOT_CHANNEL__MANAGED_CHAT_IDS=<Your list of channel IDs, example: "[-123456]">
+
+MISBOT_AUTH__ISSUER=http://localhost:8080
+MISBOT_AUTH__AUDIENCE=http://localhost:8081
+MISBOT_AUTH__TOKEN_URL=http://host.containers.internal:8080/token
+MISBOT_AUTH__JWKS_URL=http://host.containers.internal:8080/.well-known/jwks.json
 ```
+
+The configuration is read with pydantic_settings in `src/misbot/config.py`
+
+## Run the authorization server locally and access misbot secured endpoints
+
+1. Pull the [misbot-auth](https://github.com/stratila/misbot-auth) repo
+2. Go to the `misbot-auth` directory, create a secrets directory with the private key and the .env file (as described in the README), then build and run the project with `docker compose` or `podman compose`.
+3. Create a client with the permissions required to the current app endpoint (currently only `player:write player:read`)
+```bash
+docker compose -f container-compose.ym exec app uv run misbot-auth-server register-client --client-id localdev --scopes player:write,player:read
+```
+4. Get authorization token from the auth server using your newly created client credentials
+```
+curl -X 'POST' \
+  'http://localhost:8080/token' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=client_credentials&client_id=localdev&client_secret=PazF9YxWABQhnBzRsdGtVssxxXYH5FMYPxnquuCcQ1Y&scope=player%3Awrite'
+```
+5. Use the token to get access to the endpoints of the current application.
+```
+curl --location 'http://localhost:8081/player/join' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer {PASTE YOUR TOKEN}' \
+--data '{
+  "player": {
+    "name": "string",
+    "uuid": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  },
+  "meta": {
+    "message": "string",
+    "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  }
+}'
+```
+
+
 
 
 ## Run Project
@@ -241,44 +286,12 @@ INFO  [alembic.runtime.migration] Running upgrade ff9b196aaf18 -> 811440fea4ca, 
 
 ## Connect to the Database and Verify Table Creation
 
-### 1. Find the Volume Name
+### 1. Connect to the Database
 
-List Docker volumes:
-
-```bash
-docker volume ls
-```
-
-In this example, the volume created by Compose is named:
-
-```
-misbot_sqlite-db
-```
-
----
-
-### 2. Get the Database File Location
-
-Retrieve the mount point of the volume:
+Use the `sqlite` container to connect to the database and verify that `sample_table` was created:
 
 ```bash
-docker volume inspect --format '{{ .Mountpoint }}' misbot_sqlite-db
-```
-
-You will get a path similar to:
-
-```
-/home/user/.local/share/containers/storage/volumes/misbot_sqlite-db/_data
-```
-
----
-
-### 3. Connect to the Database
-
-Use the `sqlite3` tool to connect to the database and verify that `sample_table` was created:
-
-```bash
-sudo sqlite3 /home/user/.local/share/containers/storage/volumes/misbot_sqlite-db/_data/botdb.sqlite
+docker compose -f container-compose.yml sqlite sqlite3 botdb.sqlite
 ```
 
 Example session:
