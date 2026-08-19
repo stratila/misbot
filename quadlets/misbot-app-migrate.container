@@ -1,0 +1,18 @@
+[Unit]
+Description=misbot application web server database migration
+After=network-online.target podman.service
+Wants=network-online.target podman.service
+
+[Container]
+Image={IMAGE}
+ContainerName=misbot-app-migrate
+Exec=/bin/true
+Volume=misbot-db.volume:/app/db:Z
+EnvironmentFile=%h/.config/misbot/.env
+Environment=EXECUTE_MIGRATIONS=true
+Label=app=misbot
+
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes

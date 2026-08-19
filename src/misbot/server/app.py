@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from telegram import Bot, Update
 from telegram.ext import Application
 
@@ -17,6 +17,7 @@ from misbot.database.queries.time_sessions import (
     update_time_session,
 )
 from misbot.domain.models import TimeSession
+from misbot.server.auth import require_scope
 from misbot.server.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPostRequestBody
 
@@ -63,7 +64,10 @@ async def webhook(
     return {"status": "ok"}
 
 
-@fastapi_app.post("/player/join")
+@fastapi_app.post(
+    "/player/join",
+    dependencies=[Depends(require_scope("player:write"))],
+)
 async def player_join(
     player_request_body: PlayerPostRequestBody,
     request: Request,
@@ -153,7 +157,10 @@ async def player_join(
     return {"status": "ok"}
 
 
-@fastapi_app.post("/player/quit")
+@fastapi_app.post(
+    "/player/quit",
+    dependencies=[Depends(require_scope("player:write"))],
+)
 async def player_quit(
     player_request_body: PlayerPostRequestBody,
     request: Request,
