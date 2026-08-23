@@ -184,7 +184,7 @@ docker compose -f container-compose.yml exec app /bin/bash -c "export"
 
 
 
-## Editing DB Schema and Applying Migrationgs
+## Editing DB Schema and Applying Migrations
 
 ### Overview
 
@@ -200,7 +200,7 @@ When container starts it manually applies all unapplied migrations if there are 
 
 ### 1. Create a Model
 
-To create a migration, first define a model in `src/misbot/database/models.py`:
+To create a migration, first define (or edit) a model in `src/misbot/database/models.py`:
 
 ```python
 sample_table = Table(
@@ -291,7 +291,7 @@ INFO  [alembic.runtime.migration] Running upgrade ff9b196aaf18 -> 811440fea4ca, 
 Use the `sqlite` container to connect to the database and verify that `sample_table` was created:
 
 ```bash
-docker compose -f container-compose.yml sqlite sqlite3 botdb.sqlite
+docker compose -f container-compose.yml exec sqlite sqlite3 botdb.sqlite
 ```
 
 Example session:

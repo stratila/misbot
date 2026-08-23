@@ -1,10 +1,11 @@
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from telegram import Bot, Update
 from telegram.ext import Application
 
@@ -16,7 +17,7 @@ from misbot.database.queries.time_sessions import (
     get_time_session,
     update_time_session,
 )
-from misbot.domain.models import TimeSession
+from misbot.domain.models import ListUpdatePlayerModel, TimeSession
 from misbot.server.auth import require_scope
 from misbot.server.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPostRequestBody
@@ -77,7 +78,11 @@ async def player_join(
     channels = await db.get_channels(is_managed=True, status="administrator")
 
     # Update player's last seen time or create a new player if it doesn't exist.
-    await db.upsert_player(player_id=player_request_body.player.uuid, seen=now)
+    await db.upsert_player(
+        player_id=player_request_body.player.uuid,
+        nickname=player_request_body.player.name,
+        seen=now,
+    )
 
     session: TimeSession | None = await get_time_session(
         player_request_body.meta.session_id
@@ -217,4 +222,22 @@ async def player_quit(
                 parse_mode="MarkdownV2",
             )
 
+    return {"status": "ok"}
+
+
+@fastapi_app.put(
+    "/players/update-from-json",
+    dependencies=[Depends(require_scope("player:write"))],
+)
+async def update_players(file: UploadFile = File(...)):
+    contents = await file.read()
+    try:
+        decoded_contents = {"players": json.loads(contents)}
+        parsed_contents = ListUpdatePlayerModel.model_validate(decoded_contents)
+        await db.update_players(parsed_contents.players)
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON"}
+    except Exception as e:
+        logger.error("Handling JSON error", exc_info=e)
+        return {"error": "Error while handling JSON"}
     return {"status": "ok"}
