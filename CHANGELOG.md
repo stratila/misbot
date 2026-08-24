@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored `src/misbot/config.py` to use Pydantic Settings. All configuration is now defined in the `Settings` class.
 - Secured the `/player/*` endpoints by validating access tokens against the configured JWKS and enforcing the required scopes.
 - Added the `misbot-app-migrate.container` Quadlet unit so the deployment can run database migrations.
+- Added an internal PUT `/players/update-from-json` endpoint for bulk updates of player records. Added a nickname column to the players table. Refactored the move queries function from the exec module into the queries package.
 
 ### Added
 ### Changed

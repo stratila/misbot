@@ -16,3 +16,12 @@ class TimeSession(BaseModel):
             if dt is not None and dt.tzinfo is None:
                 data[field] = dt.replace(tzinfo=timezone.utc)
         super().__init__(**data)
+
+
+class UpdatePlayerModel(BaseModel):
+    player_id: UUID
+    nickname: str
+
+
+class ListUpdatePlayerModel(BaseModel):
+    players: list[UpdatePlayerModel]
