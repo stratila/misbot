@@ -1,3 +1,4 @@
+import itertools
 import re
 from datetime import timedelta
 
@@ -13,3 +14,9 @@ def timedelta_to_hhmmss(td: timedelta) -> str:
     minutes = (total_seconds % 3600) // 60
     seconds = total_seconds % 60
     return f"{hours:02} h. {minutes:02} m. {seconds:02} s."
+
+
+def chunked(iterable, size):
+    it = iter(iterable)
+    while chunk := list(itertools.islice(it, size)):
+        yield chunk

@@ -33,6 +33,7 @@ players = Table(
     "players",
     Base.metadata,
     Column("id", Uuid(), primary_key=True),
+    Column("nickname", String, nullable=True),
     Column("seen", DateTime, nullable=False),
 )
 
