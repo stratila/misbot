@@ -85,8 +85,7 @@ async def player_join(
         seen=now,
     )
 
-    session: 
-      Session | None = await get_time_session(
+    session: TimeSession | None = await get_time_session(
         player_request_body.meta.session_id
     )
 
