@@ -25,3 +25,11 @@ class UpdatePlayerModel(BaseModel):
 
 class ListUpdatePlayerModel(BaseModel):
     players: list[UpdatePlayerModel]
+
+
+class PlayerPlayTime(BaseModel):
+    nickname: str
+    days: int
+    hours: int
+    minutes: int
+    seconds: int

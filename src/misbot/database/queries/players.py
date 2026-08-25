@@ -1,11 +1,14 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import bindparam, insert, select, update
+from sqlalchemy import bindparam, case, func, insert, select, update
 
 from misbot.database.db import engine
-from misbot.database.models import players
-from misbot.domain.models import UpdatePlayerModel
+from misbot.database.models import players, time_sessions
+from misbot.domain.models import PlayerPlayTime, UpdatePlayerModel
 from misbot.server.utils import chunked
+
+# 24 hours in seconds
+_24H = 86400
 
 
 async def get_player(player_id: str):
@@ -44,3 +47,105 @@ async def update_players(records: list[UpdatePlayerModel]):
                 [{"_id": r.player_id, "nickname": r.nickname} for r in batch],
             )
         await conn.commit()
+
+
+async def get_monthly_player_stat(year: int, month: int) -> list[PlayerPlayTime]:
+    try:
+        date(year, month, 1)
+    except ValueError:
+        raise ValueError("Invalid year/month: {e}")
+
+    anchor = (
+        select(
+            time_sessions.c.session_id.label("session_id"),
+            time_sessions.c.player_id.label("player_id"),
+            time_sessions.c.joined_at.label("start_date"),
+            time_sessions.c.quit_at.label("end_date"),
+            func.datetime(time_sessions.c.joined_at, "start of day").label(
+                "delta_date"
+            ),
+            case(
+                (
+                    func.date(time_sessions.c.joined_at)
+                    == func.date(time_sessions.c.quit_at),
+                    func.round(
+                        (
+                            func.julianday(time_sessions.c.quit_at)
+                            - func.julianday(time_sessions.c.joined_at)
+                        )
+                        * _24H,
+                        0,
+                    ),
+                ),
+                (
+                    func.date(time_sessions.c.joined_at, "+1 day")
+                    <= func.date(time_sessions.c.quit_at),
+                    func.round(
+                        (
+                            func.julianday(
+                                func.datetime(
+                                    time_sessions.c.joined_at, "+1 day", "start of day"
+                                )
+                            )
+                            - func.julianday(time_sessions.c.joined_at)
+                        )
+                        * _24H,
+                        0,
+                    ),
+                ),
+            ).label("duration"),
+        )
+        .where(time_sessions.c.joined_at.isnot(None))
+        .where(time_sessions.c.quit_at.isnot(None))
+        .cte(name="dates", recursive=True)
+    )
+
+    # self-reference of the anchor to be used in the recursive part
+    d = anchor.alias()
+
+    recursive = select(
+        d.c.session_id,
+        d.c.player_id,
+        d.c.start_date,
+        d.c.end_date,
+        func.datetime(d.c.delta_date, "+1 day").label("delta_date"),
+        case(
+            (
+                func.date(d.c.delta_date, "+1 day") < func.date(d.c.end_date),
+                func.round(
+                    (
+                        func.julianday(
+                            func.datetime(d.c.delta_date, "+1 day", "start of day")
+                        )
+                        - func.julianday(func.datetime(d.c.delta_date, "start of day"))
+                    )
+                    * _24H,
+                    0,
+                ),
+            ),
+            (
+                func.date(d.c.delta_date, "+1 day") == func.date(d.c.end_date),
+                func.round(
+                    (
+                        func.julianday(d.c.end_date)
+                        - func.julianday(
+                            func.datetime(d.c.delta_date, "+1 day", "start of day")
+                        )
+                    )
+                    * _24H,
+                    0,
+                ),
+            ),
+        ).label("duration"),
+    ).where(func.date(d.c.delta_date, "+1 day") < d.c.end_date)
+
+    dates_cte = anchor.union_all(recursive)
+
+    # TODO: query from the cte
+    async with engine.begin() as conn:
+        result = await conn.execute(select(dates_cte))
+        rows = result.fetchall()
+        for row in rows:
+            print(dict(row._mapping))
+
+    return []
