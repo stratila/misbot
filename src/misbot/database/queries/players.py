@@ -1,11 +1,24 @@
+import logging
 from datetime import date, datetime
 
-from sqlalchemy import bindparam, case, func, insert, select, update
+from sqlalchemy import Integer, bindparam, case, cast, func, insert, select, update
+from sqlalchemy.dialects import sqlite
 
+from misbot.config import RuntimeEnvironment, get_settings
 from misbot.database.db import engine
 from misbot.database.models import players, time_sessions
 from misbot.domain.models import PlayerPlayTime, UpdatePlayerModel
 from misbot.server.utils import chunked
+
+settings = get_settings()
+
+logger = logging.getLogger(__name__)
+logger.setLevel(
+    level=logging.DEBUG
+    if settings.environment == RuntimeEnvironment.DEV
+    else logging.INFO
+)
+
 
 # 24 hours in seconds
 _24H = 86400
@@ -52,6 +65,8 @@ async def update_players(records: list[UpdatePlayerModel]):
 async def get_monthly_player_stat(year: int, month: int) -> list[PlayerPlayTime]:
     try:
         date(year, month, 1)
+        year = str(year)
+        month = str(month) if month > 10 else "0" + str(month)
     except ValueError:
         raise ValueError("Invalid year/month: {e}")
 
@@ -141,11 +156,40 @@ async def get_monthly_player_stat(year: int, month: int) -> list[PlayerPlayTime]
 
     dates_cte = anchor.union_all(recursive)
 
-    # TODO: query from the cte
-    async with engine.begin() as conn:
-        result = await conn.execute(select(dates_cte))
-        rows = result.fetchall()
-        for row in rows:
-            print(dict(row._mapping))
+    total_duration = func.sum(dates_cte.c.duration).label("total_duration")
 
-    return []
+    main_qry = (
+        select(
+            func.coalesce(
+                players.c.nickname,
+                dates_cte.c.player_id,
+            ).label("name"),
+            cast(total_duration / _24H, Integer).label("days"),
+            cast((total_duration % _24H) / 3600, Integer).label("hours"),
+            cast((total_duration % 3600) / 60, Integer).label("minutes"),
+            cast(total_duration % 60, Integer).label("seconds"),
+        )
+        .join_from(
+            dates_cte,
+            players,
+            dates_cte.c.player_id == players.c.id,
+        )
+        .where(func.strftime("%Y-%m", dates_cte.c.start_date) == f"{year}-{month}")
+        .group_by(dates_cte.c.player_id, players.c.nickname)
+        .order_by(total_duration.desc())
+    )
+
+    if settings.environment == RuntimeEnvironment.DEV:
+        logger.debug(
+            main_qry.compile(
+                dialect=sqlite.dialect(), compile_kwargs={"literal_binds": True}
+            ).__str__()
+        )
+
+    monthly_play_time = []
+    async with engine.begin() as conn:
+        result = await conn.execute(main_qry)
+        for row in result.fetchall():
+            monthly_play_time.append(PlayerPlayTime(**row._mapping))
+
+    return monthly_play_time

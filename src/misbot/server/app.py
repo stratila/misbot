@@ -250,5 +250,11 @@ async def update_players(file: UploadFile = File(...)):
     response_model=list[PlayerPlayTimeResponse],
 )
 async def get_monthly_stat(year: int, month: int):
-    result = await db_players.get_monthly_player_stat(year, month)
-    return result
+    try:
+        return await db_players.get_monthly_player_stat(year, month)
+    except ValueError as e:
+        logger.error("Error happened while getting player monthly stat", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST)
+    except Exception as e:
+        logger.error("Unexpected error", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR)

@@ -28,7 +28,7 @@ class ListUpdatePlayerModel(BaseModel):
 
 
 class PlayerPlayTime(BaseModel):
-    nickname: str
+    name: str
     days: int
     hours: int
     minutes: int

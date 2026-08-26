@@ -20,7 +20,7 @@ class PlayerPostRequestBody(BaseModel):
 
 
 class PlayerPlayTimeResponse(BaseModel):
-    nickname: str
+    name: str
     days: int
     hours: int
     minutes: int
