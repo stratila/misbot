@@ -38,6 +38,7 @@ async def setup_webhook(bot_app: Application):
 async def main():
     bot_app = get_bot_app()
     server = init_uvicorn_server(app=fastapi_app)
+    # TODO: sync channels table with config ids
 
     async with bot_app:
         await bot_app.start()

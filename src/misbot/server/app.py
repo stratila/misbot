@@ -10,7 +10,7 @@ from telegram import Bot, Update
 from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
-from misbot.config import get_settings
+from misbot.config import get_settings, ManagedChannelType
 from misbot.database.queries import channels as db_channels
 from misbot.database.queries import players as db_players
 from misbot.database.queries.time_sessions import (
@@ -20,8 +20,10 @@ from misbot.database.queries.time_sessions import (
 )
 from misbot.domain.models import ListUpdatePlayerModel, TimeSession
 from misbot.server.auth import require_scope
-from misbot.server.messages import get_join_msg, get_quit_msg
+from misbot.bot.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPlayTimeResponse, PlayerPostRequestBody
+
+from telegram.constants import ChatMemberStatus
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,11 @@ async def player_join(
 ):
     bot: Bot = request.app.state.bot_app.bot
     now = datetime.now(tz=timezone.utc)
-    channels = await db_channels.get_channels(is_managed=True, status="administrator")
+    channels = await db_channels.get_channels(
+        is_managed=True,
+        status=ChatMemberStatus.ADMINISTRATOR,
+        type=ManagedChannelType.LOGGER,
+    )
 
     # Update player's last seen time or create a new player if it doesn't exist.
     await db_players.upsert_player(
@@ -173,7 +179,11 @@ async def player_quit(
 ):
     bot: Bot = request.app.state.bot_app.bot
     now = datetime.now(tz=timezone.utc)
-    channels = await db_channels.get_channels(is_managed=True, status="administrator")
+    channels = await db_channels.get_channels(
+        is_managed=True,
+        status=ChatMemberStatus.ADMINISTRATOR,
+        type=ManagedChannelType.LOGGER,
+    )
 
     session: TimeSession | None = await get_time_session(
         player_request_body.meta.session_id
