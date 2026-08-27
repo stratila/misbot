@@ -17,3 +17,11 @@ class Meta(BaseModel):
 class PlayerPostRequestBody(BaseModel):
     player: Player
     meta: Meta
+
+
+class PlayerPlayTimeResponse(BaseModel):
+    name: str
+    days: int
+    hours: int
+    minutes: int
+    seconds: int

@@ -21,7 +21,7 @@ from misbot.database.queries.time_sessions import (
 from misbot.domain.models import ListUpdatePlayerModel, TimeSession
 from misbot.server.auth import require_scope
 from misbot.server.messages import get_join_msg, get_quit_msg
-from misbot.server.schemas import PlayerPostRequestBody
+from misbot.server.schemas import PlayerPlayTimeResponse, PlayerPostRequestBody
 
 logger = logging.getLogger(__name__)
 
@@ -242,3 +242,19 @@ async def update_players(file: UploadFile = File(...)):
         logger.error("Handling JSON error", exc_info=e)
         return {"error": "Error while handling JSON"}
     return {"status": "ok"}
+
+
+@fastapi_app.get(
+    "/player/monthly-stat",
+    dependencies=[Depends(require_scope("player:read"))],
+    response_model=list[PlayerPlayTimeResponse],
+)
+async def get_monthly_stat(year: int, month: int):
+    try:
+        return await db_players.get_monthly_player_stat(year, month)
+    except ValueError as e:
+        logger.error("Error happened while getting player monthly stat", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST)
+    except Exception as e:
+        logger.error("Unexpected error", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
