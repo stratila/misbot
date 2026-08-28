@@ -6,7 +6,6 @@ from misbot.config import ManagedChannelType, RuntimeEnvironment, get_settings
 settings = get_settings()
 
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(
     level=logging.DEBUG
@@ -69,5 +68,3 @@ def month_range(start, end):
 
     for i in range(start_i, end_i + 1):
         yield i // 12, i % 12 + 1
-
-

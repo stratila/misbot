@@ -35,7 +35,6 @@ def upgrade() -> None:
             nullable=False,
         )
 
-
     # ### end Alembic commands ###
 
 

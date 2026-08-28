@@ -7,11 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Refactored `src/misbot/config.py` to use Pydantic Settings. All configuration is now defined in the `Settings` class.
-- Secured the `/player/*` endpoints by validating access tokens against the configured JWKS and enforcing the required scopes.
-- Added the `misbot-app-migrate.container` Quadlet unit so the deployment can run database migrations.
-- Added an internal PUT `/players/update-from-json` endpoint for bulk updates of player records. Added a nickname column to the players table. Refactored the move queries function from the exec module into the queries package.
-- Added GET `/player/monthly-stat` endpoint and the `get_monthly_player_stat` db query accordingly.
 
 ### Added
 ### Changed
@@ -19,6 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Fixed
 ### Security
+
+
+## [0.3.0] - 2026-08-28
+
+### Added 
+- Added the `misbot-app-migrate.container` Quadlet unit so the deployment can run database migrations.
+- Added an internal PUT `/players/update-from-json` endpoint for bulk updates of player records. Added a nickname column to the players table. Refactored the move queries function from the exec module into the queries package.
+- Added GET `/player/monthly-stat` endpoint and the `get_monthly_player_stat` db query accordingly.
+- Added `type` to the `channels` table. Types now are `logger` and the `regular`. Integrate monthly stat with Telegram Bot that could post it to the regular channel type.
+
+### Changed
+- Refactored `src/misbot/config.py` to use Pydantic Settings. All configuration is now defined in the `Settings` class.
+
+### Security
+- Secured the `/player/*` endpoints by validating access tokens against the configured JWKS and enforcing the required scopes.
+
 
 ## [0.2.0] - 2026-03-07
 

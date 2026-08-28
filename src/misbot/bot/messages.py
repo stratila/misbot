@@ -47,12 +47,7 @@ def get_time_stats_msg(year: int, month: int, data: list[PlayerPlayTime]) -> str
     for item in data:
         nickname = escape_md_v2(item.name)
 
-        duration = (
-            f"{item.days}d "
-            f"{item.hours}h "
-            f"{item.minutes}m "
-            f"{item.seconds}s"
-        )
+        duration = f"{item.days}d {item.hours}h {item.minutes}m {item.seconds}s"
 
         players.append(f"• *{nickname}*: {escape_md_v2(duration)}")
 

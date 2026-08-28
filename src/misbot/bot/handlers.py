@@ -77,9 +77,9 @@ async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
-async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.info(
-        f"callback_echo {update.to_json()} {update.effective_chat.id=} {settings.channel.all_managed_chat_ids=}"
+async def callback_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug(
+        f"callback_handle_message {update.to_json()} {update.effective_chat.id=} {settings.channel.all_managed_chat_ids=}"
     )
     if update.message:
         logger.debug("Handling !echo - first ret")
@@ -110,7 +110,7 @@ async def callback_echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         if "!monthly-stat" in update.channel_post.text:
-            logger.info("Handling !monthly-stat")
+            logger.debug("Handling !monthly-stat")
             try:
                 await send_monthly_stat_message(update, context)
             except Exception as e:
@@ -169,5 +169,5 @@ handler_ack_chat_member = ChatMemberHandler(
     callback=callback_ack_chat_member,
     chat_id=settings.channel.all_managed_chat_ids,
 )
-handler_message_echo = MessageHandler(filters=None, callback=callback_echo)
+handler_message_echo = MessageHandler(filters=None, callback=callback_handle_message)
 handler_start_echo = CommandHandler("start", callback_start)

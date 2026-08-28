@@ -7,10 +7,12 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from telegram import Bot, Update
+from telegram.constants import ChatMemberStatus
 from telegram.ext import Application
 
 from misbot.bot.app import get_bot_app
-from misbot.config import get_settings, ManagedChannelType
+from misbot.bot.messages import get_join_msg, get_quit_msg
+from misbot.config import ManagedChannelType, get_settings
 from misbot.database.queries import channels as db_channels
 from misbot.database.queries import players as db_players
 from misbot.database.queries.time_sessions import (
@@ -20,10 +22,7 @@ from misbot.database.queries.time_sessions import (
 )
 from misbot.domain.models import ListUpdatePlayerModel, TimeSession
 from misbot.server.auth import require_scope
-from misbot.bot.messages import get_join_msg, get_quit_msg
 from misbot.server.schemas import PlayerPlayTimeResponse, PlayerPostRequestBody
-
-from telegram.constants import ChatMemberStatus
 
 logger = logging.getLogger(__name__)
 

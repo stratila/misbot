@@ -14,6 +14,15 @@ class RuntimeEnvironment(StrEnum):
 
 
 class ManagedChannelType(StrEnum):
+    """Managed channel roles.
+
+    ``LOGGER`` handles join and quit messages from the FastAPI app endpoints.
+
+    ``REGULAR`` handles stats and echoes messages from the admin user
+    identified by ``ChannelSettings.admin_user_id`` in the Telegram bot
+    handlers.
+    """
+
     LOGGER = "logger"
     REGULAR = "regular"
 
