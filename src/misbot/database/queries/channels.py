@@ -2,6 +2,7 @@ from typing import Any
 
 from sqlalchemy import insert, select, update
 
+from misbot.config import ManagedChannelType
 from misbot.database.db import engine
 from misbot.database.models import channels
 
@@ -17,24 +18,35 @@ async def get_channel(channel_id: int) -> dict[Any, Any] | None:
         return dict(channel._mapping) if channel else None
 
 
-async def get_channels(is_managed: bool, status: str | None = None) -> list[dict]:
+async def get_channels(
+    is_managed: bool,
+    status: str,
+    type: ManagedChannelType,
+) -> list[dict]:
     async with engine.connect() as conn:
         result = await conn.execute(
             select(channels).where(
                 channels.c.is_managed == is_managed,
                 channels.c.status == status,
+                channels.c.type == type.value,
             ),
         )
         result = result.fetchall()
         return [channel._mapping for channel in result]
 
 
-async def create_channel(channel_id: int, is_managed: bool, status: str | None = None):
+async def create_channel(
+    channel_id: int,
+    is_managed: bool,
+    type: ManagedChannelType,
+    status: str | None = None,
+):
     async with engine.begin() as conn:
         values = {
             "id": channel_id,
             "is_managed": is_managed,
             "status": status,
+            "type": type,
         }
         await conn.execute(
             insert(channels).values(**values),

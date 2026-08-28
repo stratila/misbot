@@ -5,6 +5,7 @@ from sqlalchemy import Integer, bindparam, case, cast, func, insert, select, upd
 from sqlalchemy.dialects import sqlite
 
 from misbot.config import RuntimeEnvironment, get_settings
+from misbot.constants import _24H
 from misbot.database.db import engine
 from misbot.database.models import players, time_sessions
 from misbot.domain.models import PlayerPlayTime, UpdatePlayerModel
@@ -18,10 +19,6 @@ logger.setLevel(
     if settings.environment == RuntimeEnvironment.DEV
     else logging.INFO
 )
-
-
-# 24 hours in seconds
-_24H = 86400
 
 
 async def get_player(player_id: str):

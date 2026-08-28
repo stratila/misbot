@@ -26,6 +26,7 @@ channels = Table(
     Column("id", Integer, primary_key=True),
     Column("is_managed", Boolean, nullable=False, default=False),
     Column("status", String, nullable=True),
+    Column("type", String, nullable=False),
 )
 
 

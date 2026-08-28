@@ -1,14 +1,51 @@
+import re
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import AfterValidator, BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class RuntimeEnvironment(StrEnum):
     DEV = "dev"
     PROD = "prod"
+
+
+class ManagedChannelType(StrEnum):
+    """Managed channel roles.
+
+    ``LOGGER`` handles join and quit messages from the FastAPI app endpoints.
+
+    ``REGULAR`` handles stats and echoes messages from the admin user
+    identified by ``ChannelSettings.admin_user_id`` in the Telegram bot
+    handlers.
+    """
+
+    LOGGER = "logger"
+    REGULAR = "regular"
+
+
+def validate_item_format(value: str) -> str:
+    """Extract type and check against ManagedChannelType"""
+    pattern = r"^-?\d+-([a-zA-Z]+)$"
+    match = re.match(pattern, value)
+
+    if not match:
+        raise ValueError(f"Invalid format '{value}'")
+
+    extracted_type = match.group(1)
+    valid_types = [member.value for member in ManagedChannelType]
+    if extracted_type not in valid_types:
+        raise ValueError(
+            f"Invalid type '{extracted_type}'. Must be one of: {', '.join(valid_types)}"
+        )
+
+    return value
+
+
+ManagedChannelIdWithType = Annotated[str, AfterValidator(validate_item_format)]
 
 
 class DatabaseSettings(BaseModel):
@@ -40,7 +77,19 @@ class TelegramBotSettings(BaseModel):
 
 class ChannelSettings(BaseModel):
     admin_user_id: int
-    managed_chat_ids: list[int]
+    managed_chat_ids: list[ManagedChannelIdWithType]
+
+    def get_managed_ids(self, type: ManagedChannelType) -> list[int]:
+        result = []
+        for mcid in self.managed_chat_ids:
+            chat_id, chat_type = mcid.rsplit("-", maxsplit=1)
+            if chat_type == type.value:
+                result.append(int(chat_id))
+        return result
+
+    @property
+    def all_managed_chat_ids(self) -> list[int]:
+        return [int(mcid.rsplit("-", maxsplit=1)[0]) for mcid in self.managed_chat_ids]
 
 
 class AuthorizationSettings(BaseModel):

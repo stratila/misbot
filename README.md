@@ -46,20 +46,22 @@
 MISBOT_ENVIRONMENT=dev
 MISBOT_TELEGRAM_BOT__TOKEN=<Your Bot Token>
 
-# The following can be ignored; they are used in production.
-MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=abc
-MISBOT_TELEGRAM_BOT__WEBHOOK_URL=bc://dev.com
-
-
 MISBOT_DATABASE__SQL_ECHO=True
 MISBOT_DATABASE__DB_FILE=/app/db/botdb.sqlite
 MISBOT_CHANNEL__ADMIN_USER_ID=<Your user ID, example: "12345">
-MISBOT_CHANNEL__MANAGED_CHAT_IDS=<Your list of channel IDs, example: "[-123456]">
+# List of strings in the format {signed integer}-{regular|logger}.
+# The signed integer is the channel ID, and the second part is the internal
+# channel type.
+MISBOT_CHANNEL__MANAGED_CHAT_IDS=["-123456-regular", "-654321-logger"]
 
 MISBOT_AUTH__ISSUER=http://localhost:8080
 MISBOT_AUTH__AUDIENCE=http://localhost:8081
 MISBOT_AUTH__TOKEN_URL=http://host.containers.internal:8080/token
 MISBOT_AUTH__JWKS_URL=http://host.containers.internal:8080/.well-known/jwks.json
+
+# The following can be ignored; they are used in production.
+MISBOT_TELEGRAM_BOT__WEBHOOK_SECRET_TOKEN=abc
+MISBOT_TELEGRAM_BOT__WEBHOOK_URL=bc://dev.com
 ```
 
 The configuration is read with pydantic_settings in `src/misbot/config.py`

@@ -17,4 +17,11 @@ QUIT_MSG_TEXT = (
 )
 
 
+TIME_STATS_MSG_TEXT = "*Statistics for {year} {month}, total playtime 🎮*\n\n{players}"
+
+
 TIMEFORMAT = "%d/%m/%Y %H:%M:%S"
+
+
+# 24 hours in seconds
+_24H = 86400
