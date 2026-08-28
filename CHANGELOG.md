@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 
-## [0.3.0] - 2026-08-28
+## [Unreleased]
 
 ### Added 
 - Added the `misbot-app-migrate.container` Quadlet unit so the deployment can run database migrations.
