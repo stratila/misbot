@@ -49,8 +49,8 @@ MISBOT_TELEGRAM_BOT__TOKEN=<Your Bot Token>
 MISBOT_DATABASE__SQL_ECHO=True
 MISBOT_DATABASE__DB_FILE=/app/db/botdb.sqlite
 MISBOT_CHANNEL__ADMIN_USER_ID=<Your user ID, example: "12345">
-# List of string where the format is {singed integer}-{regular|logger}
-# the singed integer is the channel id, the second part is the internal
+# List of strings in the format {signed integer}-{regular|logger}.
+# The signed integer is the channel ID, and the second part is the internal
 # channel type.
 MISBOT_CHANNEL__MANAGED_CHAT_IDS=["-123456-regular", "-654321-logger"]
 

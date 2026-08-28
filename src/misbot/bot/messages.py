@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 
-from misbot.constans import (
+from misbot.bot.utils import escape_md_v2, timedelta_to_hhmmss
+from misbot.constants import (
     JOIN_MSG_TEXT,
     QUIT_MSG_TEXT,
     TIME_STATS_MSG_TEXT,
     TIMEFORMAT,
 )
 from misbot.domain.models import PlayerPlayTime
-from misbot.server.utils import escape_md_v2, timedelta_to_hhmmss
 
 
 def get_join_msg(
@@ -41,13 +41,13 @@ def get_quit_msg(
     )
 
 
-def get_time_stats_msg(year: int, month: int, data: list[PlayerPlayTime]) -> str:
+def get_time_stats_msg(year: str, month: str, data: list[PlayerPlayTime]) -> str:
     players = []
 
     for item in data:
         nickname = escape_md_v2(item.name)
 
-        duration = f"{item.days}d {item.hours}h {item.minutes}m {item.seconds}s"
+        duration = f"{item.days} days {item.hours} hours {item.minutes} minutes {item.seconds} seconds"
 
         players.append(f"• *{nickname}*: {escape_md_v2(duration)}")
 

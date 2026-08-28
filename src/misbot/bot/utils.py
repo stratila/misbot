@@ -1,5 +1,6 @@
 import logging
-from datetime import date
+import re
+from datetime import date, timedelta
 
 from misbot.config import ManagedChannelType, RuntimeEnvironment, get_settings
 
@@ -68,3 +69,16 @@ def month_range(start, end):
 
     for i in range(start_i, end_i + 1):
         yield i // 12, i % 12 + 1
+
+
+def timedelta_to_hhmmss(td: timedelta) -> str:
+    total_seconds = int(td.total_seconds())
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    return f"{hours:02} h. {minutes:02} m. {seconds:02} s."
+
+
+def escape_md_v2(text: str) -> str:
+    # Escape all Telegram MarkdownV2 special characters
+    return re.sub(r"([_*\[\]()~`>#+\-=|{}.!])", r"\\\1", text)

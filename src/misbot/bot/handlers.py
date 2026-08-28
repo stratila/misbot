@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 
 from telegram import Update
 from telegram.constants import ChatMemberStatus
@@ -7,7 +8,7 @@ from telegram.ext import ChatMemberHandler, CommandHandler, ContextTypes, Messag
 from misbot.bot.messages import get_time_stats_msg
 from misbot.bot.utils import get_channel_type, month_range, parse_monthly_stat_message
 from misbot.config import ManagedChannelType, RuntimeEnvironment, get_settings
-from misbot.constans import FIRST_MSG_TEXT, GREETING_MSG_TEXT
+from misbot.constants import FIRST_MSG_TEXT, GREETING_MSG_TEXT
 from misbot.database.queries import channels, players, users
 
 settings = get_settings()
@@ -39,10 +40,11 @@ async def send_monthly_stat_message(update: Update, context: ContextTypes.DEFAUL
     )
     for year, month in ym_range:
         stats = await players.get_monthly_player_stat(year, month)
+        month_human_readable = date(year, month, 1).strftime("%B")
         if stats:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=get_time_stats_msg(year, month, stats),
+                text=get_time_stats_msg(year, month_human_readable, stats),
                 parse_mode="MarkdownV2",
             )
 

@@ -5,7 +5,7 @@ from sqlalchemy import Integer, bindparam, case, cast, func, insert, select, upd
 from sqlalchemy.dialects import sqlite
 
 from misbot.config import RuntimeEnvironment, get_settings
-from misbot.constans import _24H
+from misbot.constants import _24H
 from misbot.database.db import engine
 from misbot.database.models import players, time_sessions
 from misbot.domain.models import PlayerPlayTime, UpdatePlayerModel
