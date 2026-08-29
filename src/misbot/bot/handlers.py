@@ -42,11 +42,13 @@ async def send_monthly_stat_message(update: Update, context: ContextTypes.DEFAUL
         stats = await players.get_monthly_player_stat(year, month)
         month_human_readable = date(year, month, 1).strftime("%B")
         if stats:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=get_time_stats_msg(year, month_human_readable, stats),
-                parse_mode="MarkdownV2",
-            )
+            messages = get_time_stats_msg(year, month_human_readable, stats)
+            for message in messages:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=message,
+                    parse_mode="MarkdownV2",
+                )
 
 
 async def callback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):

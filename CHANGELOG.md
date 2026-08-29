@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secured the `/player/*` endpoints by validating access tokens against the configured JWKS and enforcing the required scopes.
 
 
+### Fixed
+- `send_monthly_stat_message` now returns the list of messages split by the 4096-character message limit.
+
+
 ## [0.2.0] - 2026-03-07
 
 ### Changed

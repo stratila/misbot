@@ -8,6 +8,7 @@ from misbot.constants import (
     TIMEFORMAT,
 )
 from misbot.domain.models import PlayerPlayTime
+from telegram.constants import MessageLimit
 
 
 def get_join_msg(
@@ -41,18 +42,42 @@ def get_quit_msg(
     )
 
 
-def get_time_stats_msg(year: str, month: str, data: list[PlayerPlayTime]) -> str:
-    players = []
+def get_time_stats_msg(year: str, month: str, data: list[PlayerPlayTime]) -> list[str]:
+    """
+    Generate time statistics messages, splitting into multiple messages if needed.
+    Returns a list of message strings, each ≤ 4096 characters.
+    """
+    messages = []
+    current_players = []
+    current_length = 0
+
+    # Calculate header length once
+    header = TIME_STATS_MSG_TEXT.format(year=year, month=month)
+    header_length = len(header)
 
     for item in data:
         nickname = escape_md_v2(item.name)
-
         duration = f"{item.days} days {item.hours} hours {item.minutes} minutes {item.seconds} seconds"
+        player_line = f"• *{nickname}*: {escape_md_v2(duration)}\n"
+        player_length = len(player_line)
 
-        players.append(f"• *{nickname}*: {escape_md_v2(duration)}")
+        # Check if adding this player would exceed limit
+        # Account for header + current content + new player + newline between players
+        needed_length = header_length + current_length + player_length
 
-    return TIME_STATS_MSG_TEXT.format(
-        year=year,
-        month=month,
-        players="\n".join(players),
-    )
+        if current_players and needed_length > MessageLimit.MAX_TEXT_LENGTH:
+            # Save current message and start a new one
+            message_content = "\n".join(current_players)
+            messages.append(header + message_content)
+            current_players = []
+            current_length = 0
+
+        current_players.append(player_line.rstrip("\n"))
+        current_length += player_length
+
+    # Add the last message
+    if current_players:
+        message_content = "\n".join(current_players)
+        messages.append(header + message_content)
+
+    return messages
