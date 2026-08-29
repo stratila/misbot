@@ -12,6 +12,7 @@ dependencies = [
     "alembic>=1.18.1",
     "cryptography>=50.0.0",
     "fastapi[standard]>=0.128.0",
+    "ijson>=3.5.1",
     "pydantic-settings>=2.12.0",
     "pyjwt>=2.13.0",
     "python-telegram-bot[webhooks]>=22.8",

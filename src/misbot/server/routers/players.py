@@ -1,6 +1,7 @@
 import json
 import logging
 from http import HTTPStatus
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -8,6 +9,7 @@ from fastapi import (
     Depends,
     File,
     HTTPException,
+    Query,
     Request,
     UploadFile,
 )
@@ -22,7 +24,11 @@ from misbot.domain.models import (
     QuitData,
 )
 from misbot.domain.services import players as players_svc
-from misbot.domain.services.players import handle_player_join, handle_player_quit
+from misbot.domain.services.players import (
+    handle_player_join,
+    handle_player_quit,
+    handle_player_stat_from_json,
+)
 from misbot.server.auth import require_scope
 from misbot.server.schemas import (
     GetPlayerResponse,
@@ -40,11 +46,16 @@ JOIN = "/join"
 QUIT = "/quit"
 UPDATE_FROM_JSON = "/update-from-json"
 MONTHLY_STAT = "/monthly-stat"
+SEND_STAT_FROM_JSON = "/send-stat-from-json"
 
 
 # Players scopes
 PLAYERS_WRITE = "players:write"
 PLAYERS_READ = "players:read"
+
+# Regexes.
+
+Q_DATE_FMT = r"^\d{4}-(0[1-9]|1[0-2])$"
 
 settings = get_settings()
 
@@ -140,7 +151,7 @@ async def post_player_quit(
     UPDATE_FROM_JSON,
     dependencies=[Depends(require_scope(PLAYERS_WRITE))],
 )
-async def update_players(file: UploadFile = File(...)):
+async def update_players_from_json(file: UploadFile = File(...)):
     """Internal route to update the table with new columns"""
     contents = await file.read()
     try:
@@ -154,3 +165,32 @@ async def update_players(file: UploadFile = File(...)):
         logger.error(f"Unexpected error in {PLAYERS + UPDATE_FROM_JSON}", exc_info=e)
         return {"error": "Error while handling JSON"}
     return JSONResponse(content={"status": "ok"})
+
+
+@players_router.post(
+    SEND_STAT_FROM_JSON,
+    dependencies=[Depends(require_scope(PLAYERS_WRITE))],
+)
+async def send_stat_from_json(
+    request: Request,
+    date1: Annotated[str, Query(pattern=Q_DATE_FMT)],
+    date2: Annotated[str | None, Query(pattern=Q_DATE_FMT)] = None,
+    file: UploadFile = File(...),
+):
+    """Send stored chat statistics that are missing from the database.
+
+    Args:
+        date1: Start date of the range to process, in YYYY-MM format.
+        date2: Optional end date of the range to process, in YYYY-MM format.
+            If omitted, only ``date1`` is processed.
+        file: Upload file containing the statistics payload to send.
+    """
+    try:
+        await handle_player_stat_from_json(
+            request.app.state.bot_app.bot, file.file, date1, date2
+        )
+        return JSONResponse({"status": "ok"})
+
+    except Exception as e:
+        logger.error(f"Unexpected error in {PLAYERS + SEND_STAT_FROM_JSON}", exc_info=e)
+        return {"error": "Error while handling JSON"}

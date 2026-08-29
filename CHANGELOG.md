@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added an internal PUT `/players/update-from-json` endpoint for bulk updates of player records. Added a nickname column to the players table. Refactored the move queries function from the exec module into the queries package.
 - Added GET `/player/monthly-stat` endpoint and the `get_monthly_player_stat` db query accordingly.
 - Added `type` to the `channels` table. Types now are `logger` and the `regular`. Integrate monthly stat with Telegram Bot that could post it to the regular channel type.
+- Added POST `/player/send-stat-from-json` to send stored chat statistics that are missing from the database.
 
 ### Changed
 - Refactored `src/misbot/config.py` to use Pydantic Settings. All configuration is now defined in the `Settings` class.

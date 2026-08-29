@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from telegram.constants import MessageLimit
+
 from misbot.bot.utils import escape_md_v2, timedelta_to_hhmmss
 from misbot.constants import (
     JOIN_MSG_TEXT,
@@ -8,7 +10,6 @@ from misbot.constants import (
     TIMEFORMAT,
 )
 from misbot.domain.models import PlayerPlayTime
-from telegram.constants import MessageLimit
 
 
 def get_join_msg(

@@ -1,12 +1,15 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
+from typing import IO
 from uuid import UUID
 
 from telegram import Bot
 from telegram.constants import ChatMemberStatus
 from telegram.error import TelegramError
 
-from misbot.bot.messages import get_join_msg, get_quit_msg
+from misbot.bot.messages import get_join_msg, get_quit_msg, get_time_stats_msg
+from misbot.bot.utils import get_year_month_from_text, month_range
 from misbot.config import ManagedChannelType, get_settings
 from misbot.database.queries import channels as db_channels
 from misbot.database.queries import players as db_players
@@ -18,12 +21,17 @@ from misbot.database.queries.time_sessions import (
 )
 from misbot.domain.models import (
     JoinData,
+    PlayerPlayTime,
     ProcessedJoin,
     ProcessedQuit,
     QuitData,
     SentMessageStatus,
     SessionStatus,
     TimeSession,
+)
+from misbot.domain.utils import (
+    get_human_readable_result_for_a_month,
+    parse_chat_history_file,
 )
 
 
@@ -304,3 +312,49 @@ async def handle_player_quit(bot: Bot, quit_data: QuitData) -> ProcessedJoin:
         status=SessionStatus.OK,
         sent_messages_status=messages_status,
     )
+
+
+async def handle_player_stat_from_json(
+    bot: Bot, file: IO, start_date: str, end_date: str
+):
+    ch_monthly_stat = parse_chat_history_file(file)
+
+    start_date = get_year_month_from_text(start_date)
+    end_date = get_year_month_from_text(end_date) if end_date else None
+
+    regular_channels = await db_channels.get_channels(
+        is_managed=True,
+        status=ChatMemberStatus.ADMINISTRATOR,
+        type=ManagedChannelType.REGULAR,
+    )
+
+    regular_channels_ids = [channel["id"] for channel in regular_channels]
+
+    for year, month in month_range(start_date, end_date):
+        await send_player_stat_from_json(
+            bot, regular_channels_ids, ch_monthly_stat, year, month
+        )
+
+
+async def send_player_stat_from_json(
+    bot: Bot, channel_ids: list[str], result_set: defaultdict, year: int, month: int
+):
+    stats = get_human_readable_result_for_a_month(result_set, year, month)
+    if not stats:
+        return
+    stats = [
+        PlayerPlayTime(name=name, days=t[0], hours=t[1], minutes=t[2], seconds=t[3])
+        for name, t in stats
+    ]
+    month_human_readable = date(year, month, 1).strftime("%B")
+    for channel_id in channel_ids:
+        try:
+            messages = get_time_stats_msg(year, month_human_readable, stats)
+            for message in messages:
+                await bot.send_message(
+                    chat_id=channel_id,
+                    text=message,
+                    parse_mode="MarkdownV2",
+                )
+        except Exception as exc:
+            logger.error(f"Sending stat from json {year} {month} error", exc_info=exc)
