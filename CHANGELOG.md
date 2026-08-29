@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Refactored `src/misbot/config.py` to use Pydantic Settings. All configuration is now defined in the `Settings` class.
+- Refactored FastAPI routes by adding `players` and `telegram` routers, and added `services` module.
 
 ### Security
 - Secured the `/player/*` endpoints by validating access tokens against the configured JWKS and enforcing the required scopes.
